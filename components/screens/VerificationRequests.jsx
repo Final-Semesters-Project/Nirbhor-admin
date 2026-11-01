@@ -1,0 +1,396 @@
+"use client";
+
+import React, { useState } from "react";
+import {
+  CheckCircle,
+  Eye,
+  FileCheck,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Search,
+  Check,
+  Clock,
+  ShieldCheck,
+  User
+} from "lucide-react";
+
+export default function VerificationRequests({
+  verifications,
+  stats,
+  onReviewDocuments
+}) {
+  const [activeFilter, setActiveFilter] = useState("all"); // "all", "level1", "level2"
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
+  // Filter items
+  const filteredList = verifications.filter((item) => {
+    if (activeFilter === "level1" && item.levelType !== "level1") return false;
+    if (activeFilter === "level2" && item.levelType !== "level2") return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.phone.includes(q) ||
+        item.category?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const pageSize = 5;
+  const totalPages = Math.ceil(filteredList.length / pageSize) || 1;
+  const paginatedList = filteredList.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Verification Requests
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Review and manage professional skill verification status across the ecosystem.
+          </p>
+        </div>
+
+        {/* Search input */}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search provider name or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
+          />
+        </div>
+      </div>
+
+      {/* Filter Tabs matching Screenshot 3 */}
+      <div className="flex border-b border-gray-200 gap-8 text-sm">
+        <button
+          onClick={() => {
+            setActiveFilter("all");
+            setCurrentPage(1);
+          }}
+          className={`pb-3 font-semibold transition cursor-pointer relative ${
+            activeFilter === "all"
+              ? "text-[#16654e] border-b-2 border-[#16654e]"
+              : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          All
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveFilter("level1");
+            setCurrentPage(1);
+          }}
+          className={`pb-3 font-semibold transition cursor-pointer relative ${
+            activeFilter === "level1"
+              ? "text-[#16654e] border-b-2 border-[#16654e]"
+              : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          Basic (Level 1)
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveFilter("level2");
+            setCurrentPage(1);
+          }}
+          className={`pb-3 font-semibold transition cursor-pointer relative ${
+            activeFilter === "level2"
+              ? "text-[#16654e] border-b-2 border-[#16654e]"
+              : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          Document Pending (Level 2)
+        </button>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50/60 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-4 sm:px-6">PHOTO</th>
+                <th className="py-3.5 px-4">NAME</th>
+                <th className="py-3.5 px-4">PHONE</th>
+                <th className="py-3.5 px-4">REG. DATE</th>
+                <th className="py-3.5 px-4">LEVEL</th>
+                <th className="py-3.5 px-4">STATUS</th>
+                <th className="py-3.5 px-4 sm:px-6 text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {paginatedList.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-gray-50/70 transition-colors group"
+                >
+                  {/* Photo */}
+                  <td className="py-3.5 px-4 sm:px-6">
+                    <img
+                      src={item.avatar}
+                      alt={item.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-2xs"
+                    />
+                  </td>
+
+                  {/* Name */}
+                  <td className="py-3.5 px-4 font-semibold text-gray-900">
+                    <div>{item.name}</div>
+                    <div className="text-[11px] text-gray-400 font-normal">
+                      {item.category}
+                    </div>
+                  </td>
+
+                  {/* Phone */}
+                  <td className="py-3.5 px-4 text-gray-600 font-mono text-xs">
+                    {item.phone}
+                  </td>
+
+                  {/* Reg Date */}
+                  <td className="py-3.5 px-4 text-gray-600 text-xs">
+                    {item.regDate}
+                  </td>
+
+                  {/* Level Badge */}
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`inline-block text-xs font-medium px-2.5 py-1 rounded-md ${
+                        item.levelType === "level1"
+                          ? "bg-teal-50 text-teal-700 border border-teal-200/60"
+                          : "bg-gray-100 text-gray-700 border border-gray-200"
+                      }`}
+                    >
+                      {item.level}
+                    </span>
+                  </td>
+
+                  {/* Status Badge */}
+                  <td className="py-3.5 px-4">
+                    {item.status === "PENDING" ? (
+                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        PENDING
+                      </span>
+                    ) : item.status === "APPROVED" ? (
+                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        APPROVED
+                      </span>
+                    ) : (
+                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                        REJECTED
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Action Button */}
+                  <td className="py-3.5 px-4 sm:px-6 text-center">
+                    {item.status === "PENDING" ? (
+                      <button
+                        onClick={() => onReviewDocuments(item)}
+                        className="px-4 py-1.5 border border-[#16654e] text-[#16654e] hover:bg-[#16654e] hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                      >
+                        Review Documents
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedProfile(item)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-gray-900 text-xs font-medium transition cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View Profile</span>
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table Footer & Pagination matching Screenshot 3 */}
+        <div className="py-3.5 px-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
+          <div>
+            Showing {Math.min(filteredList.length, pageSize)} of 42 requests
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(1)}
+              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
+                currentPage === 1
+                  ? "bg-[#16654e] text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              1
+            </button>
+            <button
+              onClick={() => setCurrentPage(2)}
+              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
+                currentPage === 2
+                  ? "bg-[#16654e] text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              2
+            </button>
+            <button
+              onClick={() => setCurrentPage(3)}
+              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
+                currentPage === 3
+                  ? "bg-[#16654e] text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              3
+            </button>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Summary Card (from Screenshot 3) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        {/* Left Sub-card: Approved Today */}
+        <div className="md:col-span-3 bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-gray-400">
+            <CheckCircle className="w-5 h-5 text-emerald-600" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              Today
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              {stats.approvedToday}
+            </div>
+            <p className="text-xs font-medium text-gray-500 mt-1">
+              Approved Today
+            </p>
+          </div>
+        </div>
+
+        {/* Right Sub-card: Pending Verification Queue */}
+        <div className="md:col-span-9 bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-bold text-gray-900">
+              Pending Verification Queue
+            </h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-xl">
+              Average review time: {stats.avgReviewTimeHours} hours. Keep the ecosystem trusted and professional.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 mt-4 pt-3 border-t border-gray-100 text-xs font-semibold">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span className="text-gray-700">{stats.pendingDocsCount} Pending Docs</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#16654e]" />
+              <span className="text-gray-700">{stats.basicWaitingCount} Basic Waiting</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* View Profile Modal */}
+      {selectedProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-base text-gray-900">
+                Verified Provider Profile
+              </h3>
+              <button
+                onClick={() => setSelectedProfile(null)}
+                className="text-gray-400 hover:text-gray-600 text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4 text-sm">
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedProfile.avatar}
+                  alt={selectedProfile.name}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500"
+                />
+                <div>
+                  <h4 className="font-bold text-gray-900 text-base">
+                    {selectedProfile.name}
+                  </h4>
+                  <p className="text-xs text-emerald-700 font-semibold">
+                    {selectedProfile.category}
+                  </p>
+                  <p className="text-xs text-gray-500 font-mono mt-0.5">
+                    {selectedProfile.phone}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-3.5 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Verification Level:</span>
+                  <span className="font-semibold text-gray-900">{selectedProfile.level}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Registration Date:</span>
+                  <span className="font-semibold text-gray-900">{selectedProfile.regDate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">National ID:</span>
+                  <span className="font-mono text-gray-900 font-semibold">{selectedProfile.nidNumber || "Verified"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Service Coverage:</span>
+                  <span className="font-semibold text-gray-900">{selectedProfile.address || "Dhaka Division"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setSelectedProfile(null)}
+                className="px-4 py-2 text-xs font-semibold bg-[#16654e] text-white rounded-xl"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Nirbhor Admin Portal - Verified Trust & Moderation Platform
 
-## Getting Started
+A modern, responsive, and secure administrative dashboard built with Next.js, React, and Tailwind CSS for the **Nirbhor** workforce ecosystem.
 
-First, run the development server:
+---
+
+## 🌟 Key Features
+
+1. **Admin Authentication (Screen 1)**
+   - High-fidelity login interface with custom Nirbhor Trust Logo.
+   - Email/password authentication with toggleable visibility.
+   - Pre-filled authorized demo credentials for rapid inspection (`admin@nirbhor.com`).
+
+2. **Dashboard Overview (Screen 2)**
+   - **4 KPI Metric Cards**: Pending Verifications (12), Flagged Profiles (5), Total Providers (1,240), Total Bookings (8,450).
+   - **Recent Verification Requests**: Quick review trigger for pending applicants.
+   - **Recent Reports Feed**: Incident warnings and safety alerts.
+   - **Live Network Activity & Provider Density**: Geographic cluster visualization across service zones.
+   - **Generate Report**: Modal to compile and export administrative audit reports.
+
+3. **Verification Requests Queue (Screen 3)**
+   - Multi-tier filtering: All, Basic (Level 1), and Document Pending (Level 2).
+   - Structured table with profile avatars, contact details, registration timestamps, verification levels, and actions.
+   - Summary cards displaying "Approved Today" counter and review SLA metrics.
+
+4. **Document Verification Detail View (Screen 4)**
+   - Security risk warning banner.
+   - Applicant profile summary and biometric live selfie verification.
+   - National ID Card Front & Back restricted audit previews with zoom modal.
+   - Decision console: Rejection reason justification, auditable Reject and Approve workflows.
+
+5. **Reports & Moderation Console (Screen 5)**
+   - Safety feeds categorized by High Risk, Pending, and Resolved statuses.
+   - Incident cards with booking context, reporter identities, and violation descriptions.
+   - Action triggers: "View Booking Context", "View Chat Log", "View Provider History", "Suspend Account", and "Dismiss".
+
+6. **Full English Localization**
+   - 100% clean English text across all screens, badges, filters, and reports with zero bilingual/Bangla clutter.
+
+---
+
+## 📁 Project Structure
+
+```
+nirbhor-/
+├── app/
+│   ├── globals.css                       # Tailwind CSS styling and theme setup
+│   ├── layout.js                          # Root HTML shell & metadata
+│   └── page.js                            # Main application controller & state router
+├── components/
+│   ├── branding/
+│   │   └── NirbhorLogo.jsx                # Responsive vector SVG trust emblem & wordmark
+│   ├── layout/
+│   │   └── AdminSidebar.jsx               # Deep teal sidebar with badges & admin profile
+│   └── screens/
+│       ├── LoginScreen.jsx                # Screen 1: Admin Login
+│       ├── DashboardOverview.jsx          # Screen 2: System Status & KPI Overview
+│       ├── VerificationRequests.jsx       # Screen 3: Verification Queue & Filters
+│       ├── DocumentVerificationDetail.jsx # Screen 4: NID & Live Selfie Review
+│       ├── ReportsAndFlags.jsx            # Screen 5: Community Safety & Moderation
+│       ├── UserManagement.jsx             # Providers & Seekers Directory
+│       └── AnalyticsScreen.jsx            # Growth & Category Distribution Insights
+├── data/
+│   └── mockData.js                        # Structured English dataset
+└── public/                                # Static assets
+```
+
+---
+
+## 🚀 Getting Started
+
+To run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
