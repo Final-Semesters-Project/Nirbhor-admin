@@ -10,7 +10,10 @@ import {
   BarChart2,
   LogOut,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  KeyRound,
+  FileText,
+  UserCog
 } from "lucide-react";
 
 export default function AdminSidebar({
@@ -22,7 +25,7 @@ export default function AdminSidebar({
   isMobileOpen,
   setIsMobileOpen
 }) {
-  const navItems = [
+  const coreModules = [
     {
       id: "dashboard",
       label: "Dashboard",
@@ -56,6 +59,21 @@ export default function AdminSidebar({
     }
   ];
 
+  const superAdminModules = [
+    {
+      id: "admin_management",
+      label: "Admin Management",
+      icon: KeyRound,
+      badge: null
+    },
+    {
+      id: "audit_logs",
+      label: "Audit Logs",
+      icon: FileText,
+      badge: null
+    }
+  ];
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -76,78 +94,123 @@ export default function AdminSidebar({
           backgroundImage: "linear-gradient(180deg, #16695b 0%, #12574b 100%)"
         }}
       >
-        {/* Top Brand Section */}
-        <div>
+        {/* Scrollable Navigation Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {/* Top Brand Header */}
           <div className="p-6 border-b border-white/10">
             <NirbhorLogo
               variant="light"
               size="sm"
-              subtitle="Verified Trust Portal"
+              subtitle="Trust & Admin Portal"
               showAdminBadge={false}
             />
           </div>
 
-          {/* Navigation Items */}
-          <nav className="p-3 space-y-1 mt-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+          {/* 1. Core Modules Section */}
+          <div className="p-3">
+            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-200/60 block mb-1.5">
+              CORE MODULES
+            </span>
+            <nav className="space-y-1">
+              {coreModules.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (setIsMobileOpen) setIsMobileOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
-                    isActive
-                      ? "bg-white/20 text-white shadow-sm font-semibold backdrop-blur-xs"
-                      : "text-emerald-100/80 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`w-5 h-5 transition-transform group-hover:scale-105 ${
-                        isActive ? "text-white" : "text-emerald-200/80"
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </div>
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      if (setIsMobileOpen) setIsMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
+                      isActive
+                        ? "bg-white/20 text-white shadow-sm font-semibold backdrop-blur-xs"
+                        : "text-emerald-100/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={`w-4 h-4 transition-transform group-hover:scale-105 ${
+                          isActive ? "text-white" : "text-emerald-200/80"
+                        }`}
+                      />
+                      <span>{item.label}</span>
+                    </div>
 
-                  {item.badge && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-bold shadow-xs ${
-                        item.badgeColor || "bg-emerald-400 text-emerald-950"
-                      }`}
-                    >
-                      {item.badge}
+                    {item.badge && (
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs ${
+                          item.badgeColor || "bg-emerald-400 text-emerald-950"
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* 2. Super Admin / Access Control Section matching Screenshot 1 & 3 */}
+          <div className="p-3 pt-1 border-t border-white/10 mt-1">
+            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-200/60 block mb-1.5">
+              SUPER ADMIN / ACCESS CONTROL
+            </span>
+            <nav className="space-y-1">
+              {superAdminModules.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      if (setIsMobileOpen) setIsMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
+                      isActive
+                        ? "bg-white/20 text-white shadow-sm font-semibold backdrop-blur-xs"
+                        : "text-emerald-100/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={`w-4 h-4 transition-transform group-hover:scale-105 ${
+                          isActive ? "text-white" : "text-emerald-200/80"
+                        }`}
+                      />
+                      <span>{item.label}</span>
+                    </div>
+
+                    <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-white/10 text-emerald-200">
+                      SUPER
                     </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </div>
 
-        {/* Bottom Admin User Profile Card */}
-        <div className="p-4 border-t border-white/10 bg-black/10">
+        {/* Bottom Super Admin User Profile Card matching Screenshots */}
+        <div className="p-4 border-t border-white/10 bg-black/15 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-                  alt="Admin"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-emerald-300/40"
-                />
+                <div className="w-10 h-10 rounded-full bg-emerald-900 border-2 border-emerald-300/40 flex items-center justify-center text-white font-bold text-xs">
+                  TM
+                </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#12574b] rounded-full" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-white leading-tight truncate">
-                  {currentUser?.name || "Admin Name"}
+                <p className="text-xs font-semibold text-white leading-tight truncate">
+                  {currentUser?.name || "Tanvir Mahmud"}
                 </p>
                 <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-300/90 mt-0.5">
-                  {currentUser?.role || "SUPER USER"}
+                  {currentUser?.role || "SUPER ADMIN"}
                 </span>
               </div>
             </div>
@@ -166,4 +229,3 @@ export default function AdminSidebar({
     </>
   );
 }
-

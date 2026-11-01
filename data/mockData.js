@@ -256,3 +256,142 @@ export const NETWORK_HOTSPOTS = [
   { city: "Motijheel / Old Dhaka", count: 220, x: 55, y: 68, level: "medium" },
   { city: "Badda / Rampura", count: 165, x: 62, y: 48, level: "medium" }
 ];
+
+export const INITIAL_ADMINS = [
+  {
+    id: "ADM-001",
+    name: "Rahim Ahmed",
+    initials: "RA",
+    phone: "+880 1711-209412",
+    status: "Active",
+    createdDate: "12 Jan 2024",
+    lastActive: "2 hours ago",
+    role: "Verification Admin",
+    email: "rahim.ahmed@nirbhor.com"
+  },
+  {
+    id: "ADM-002",
+    name: "Karim Hossain",
+    initials: "KH",
+    phone: "+880 1823-456789",
+    status: "Active",
+    createdDate: "04 Feb 2024",
+    lastActive: "15 minutes ago",
+    role: "Safety & Moderation Admin",
+    email: "karim.hossain@nirbhor.com"
+  },
+  {
+    id: "ADM-003",
+    name: "Nusrat Jahan",
+    initials: "NA",
+    phone: "+880 1914-789012",
+    status: "Inactive",
+    createdDate: "19 Feb 2024",
+    lastActive: "5 days ago",
+    role: "Support Admin",
+    email: "nusrat.jahan@nirbhor.com"
+  },
+  {
+    id: "ADM-004",
+    name: "Tariqul Islam",
+    initials: "TB",
+    phone: "+880 1675-341988",
+    status: "Active",
+    createdDate: "28 Feb 2024",
+    lastActive: "1 day ago",
+    role: "Operations Admin",
+    email: "tariqul.islam@nirbhor.com"
+  },
+  {
+    id: "ADM-005",
+    name: "Farzana Siddique",
+    initials: "FS",
+    phone: "+880 1552-984321",
+    status: "Inactive",
+    createdDate: "10 Mar 2024",
+    lastActive: "3 weeks ago",
+    role: "Auditing Officer",
+    email: "farzana.siddique@nirbhor.com"
+  }
+];
+
+export const INITIAL_AUDIT_LOGS = [
+  {
+    id: "LOG-101",
+    admin: "Tanvir Mahmud",
+    adminRole: "Super Admin",
+    actionType: "Approved",
+    actionColor: "emerald",
+    iconType: "check",
+    description: "Approved verification for provider Karim Ahmed",
+    target: "Provider Karim Ahmed",
+    timestamp: "Oct 18, 2026 at 2:34 PM",
+    ip: "103.114.98.24",
+    details: "National ID and biometric face match score 99.4%. Assigned Level 2 verification badge."
+  },
+  {
+    id: "LOG-102",
+    admin: "Tanvir Mahmud",
+    adminRole: "Super Admin",
+    actionType: "Suspension",
+    actionColor: "rose",
+    iconType: "slash",
+    description: "Suspended admin account Rahim Hossain",
+    target: "Admin Rahim Hossain",
+    timestamp: "Oct 18, 2026 at 11:15 AM",
+    ip: "103.114.98.24",
+    details: "Administrative access revoked following policy review and failed credential verification."
+  },
+  {
+    id: "LOG-103",
+    admin: "Karim Hossain",
+    adminRole: "Admin",
+    actionType: "Created",
+    actionColor: "blue",
+    iconType: "user_plus",
+    description: "Created new admin account for 01711234567",
+    target: "Account 01711234567",
+    timestamp: "Oct 17, 2026 at 5:48 PM",
+    ip: "180.211.213.10",
+    details: "Provisioned credentials for junior verification operator with read-only dashboard access."
+  },
+  {
+    id: "LOG-104",
+    admin: "Tariqul Islam",
+    adminRole: "Admin",
+    actionType: "Approved",
+    actionColor: "emerald",
+    iconType: "check",
+    description: "Approved emergency trade license verification for provider Sumon Roy",
+    target: "Provider Sumon Roy",
+    timestamp: "Oct 16, 2026 at 4:10 PM",
+    ip: "203.76.128.4",
+    details: "Validated city corporation electrical contractor trade license copy #TR-449102."
+  },
+  {
+    id: "LOG-105",
+    admin: "Nusrat Jahan",
+    adminRole: "Admin",
+    actionType: "Rejected",
+    actionColor: "rose",
+    iconType: "alert",
+    description: "Rejected provider application for Arif Chowdhury due to invalid NID",
+    target: "Applicant Arif Chowdhury",
+    timestamp: "Oct 15, 2026 at 1:22 PM",
+    ip: "118.179.223.90",
+    details: "Uploaded NID scan was unreadable/blurred and DOB mismatched with registration records."
+  },
+  {
+    id: "LOG-106",
+    admin: "Tanvir Mahmud",
+    adminRole: "Super Admin",
+    actionType: "Created",
+    actionColor: "blue",
+    iconType: "user_plus",
+    description: "Created new admin account for 01918765432 (Farzana Siddique)",
+    target: "Farzana Siddique",
+    timestamp: "Oct 14, 2026 at 9:05 AM",
+    ip: "103.114.98.24",
+    details: "Created supervisory admin account with audit trail and reports moderation permissions."
+  }
+];

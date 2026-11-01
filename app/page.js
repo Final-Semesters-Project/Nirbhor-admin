@@ -9,10 +9,13 @@ import DocumentVerificationDetail from "@/components/screens/DocumentVerificatio
 import ReportsAndFlags from "@/components/screens/ReportsAndFlags";
 import UserManagement from "@/components/screens/UserManagement";
 import AnalyticsScreen from "@/components/screens/AnalyticsScreen";
+import AdminManagement from "@/components/screens/AdminManagement";
+import AuditLogsScreen from "@/components/screens/AuditLogsScreen";
 import {
   INITIAL_STATS,
   INITIAL_VERIFICATIONS,
-  INITIAL_REPORTS
+  INITIAL_REPORTS,
+  INITIAL_ADMINS
 } from "@/data/mockData";
 import {
   Menu,
@@ -40,6 +43,7 @@ export default function App() {
   const [stats, setStats] = useState(INITIAL_STATS);
   const [verifications, setVerifications] = useState(INITIAL_VERIFICATIONS);
   const [reports, setReports] = useState(INITIAL_REPORTS);
+  const [admins, setAdmins] = useState(INITIAL_ADMINS);
   const [selectedWorker, setSelectedWorker] = useState(INITIAL_VERIFICATIONS[0]);
   const [toastNotification, setToastNotification] = useState(null);
 
@@ -150,6 +154,10 @@ export default function App() {
               <span className="capitalize text-[#16654e] font-semibold">
                 {activeTab === "review_document"
                   ? "Document Verification"
+                  : activeTab === "admin_management"
+                  ? "Admin Management"
+                  : activeTab === "audit_logs"
+                  ? "Audit Logs"
                   : activeTab.replace("_", " ")}
               </span>
             </div>
@@ -205,6 +213,12 @@ export default function App() {
           {activeTab === "users" && <UserManagement />}
 
           {activeTab === "analytics" && <AnalyticsScreen />}
+
+          {activeTab === "admin_management" && (
+            <AdminManagement admins={admins} setAdmins={setAdmins} />
+          )}
+
+          {activeTab === "audit_logs" && <AuditLogsScreen />}
         </main>
       </div>
     </div>
