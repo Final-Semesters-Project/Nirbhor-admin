@@ -104,75 +104,7 @@ export default function App() {
 
   // 1. Initial State: If not logged in, render the Login Screen (Screenshot 1)
   if (!isAuthenticated) {
-    return (
-      <div className="relative">
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-
-        {/* Quick Review Navigation Bar for Evaluator Convenience */}
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur-md text-white text-[11px] px-4 py-2 rounded-full shadow-2xl border border-gray-700/80 flex items-center gap-3 z-50">
-          <span className="text-emerald-400 font-semibold">Preview:</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("dashboard");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Dashboard
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("verifications");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Verifications
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("review_document");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Doc Review
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("reports");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Reports
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("users");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Users
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              handleLoginSuccess({ name: "Admin Name", role: "Super Admin", email: "admin@nirbhor.com" });
-              setActiveTab("analytics");
-            }}
-            className="hover:text-emerald-300 underline cursor-pointer"
-          >
-            Analytics
-          </button>
-        </div>
-      </div>
-    );
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
   // 2. Authenticated Admin Dashboard Layout
@@ -223,88 +155,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Actions & Navigation Bar */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Direct Switcher Tabs for Easy Testing */}
-            <div className="hidden md:flex items-center bg-gray-100 p-1 rounded-xl text-xs font-medium text-gray-600">
-              <button
-                onClick={() => setActiveTab("dashboard")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "dashboard"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab("verifications")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "verifications"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Verifications
-              </button>
-              <button
-                onClick={() => setActiveTab("review_document")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "review_document"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Doc Review
-              </button>
-              <button
-                onClick={() => setActiveTab("reports")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "reports"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Reports
-              </button>
-              <button
-                onClick={() => setActiveTab("users")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "users"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Users
-              </button>
-              <button
-                onClick={() => setActiveTab("analytics")}
-                className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                  activeTab === "analytics"
-                    ? "bg-white text-gray-900 shadow-2xs font-bold"
-                    : "hover:text-gray-900"
-                }`}
-              >
-                Analytics
-              </button>
-            </div>
-
-            {/* Notifications Button */}
+          {/* Right Header: Notification Icon Only */}
+          <div className="flex items-center">
             <button
               onClick={() => showToast("All system queues operating normally.")}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl relative transition cursor-pointer"
               title="Notifications"
+              aria-label="Notifications"
             >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
-            </button>
-
-            {/* Logout pill */}
-            <button
-              onClick={handleLogout}
-              className="text-xs font-semibold text-gray-600 hover:text-red-600 px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-red-200 hover:bg-red-50/50 transition cursor-pointer"
-            >
-              Exit to Login
+              <Bell className="w-5 h-5 text-gray-600" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full" />
             </button>
           </div>
         </header>
