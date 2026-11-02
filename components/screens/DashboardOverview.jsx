@@ -10,19 +10,14 @@ import {
   AlertTriangle,
   UserX,
   CreditCard,
-  MapPin,
   CheckCircle,
   ExternalLink,
   ChevronRight,
-  TrendingUp,
   Download,
-  Shield,
-  Layers,
   RotateCw,
   RotateCcw,
   AlertCircle,
 } from "lucide-react";
-import { NETWORK_HOTSPOTS } from "@/data/mockData";
 
 // Helper to format timestamps into relative time in English
 const formatTimeAgo = (dateStr) => {
@@ -70,73 +65,72 @@ export default function DashboardOverview({
   isLoading
 }) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [selectedHotspot, setSelectedHotspot] = useState(null);
 
   // Purely dynamic Verification items from live API (no static mock data)
   const displayVerifications = Array.isArray(verifications)
     ? verifications.slice(0, 5).map((v) => {
-        const id = v.user_id || v.id;
-        const name = v.name || "Provider";
-        const initials =
-          name
-            .replace(/[^a-zA-Z\s]/g, "")
-            .trim()
-            .split(/\s+/)
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase() || "PR";
+      const id = v.user_id || v.id;
+      const name = v.name || "Provider";
+      const initials =
+        name
+          .replace(/[^a-zA-Z\s]/g, "")
+          .trim()
+          .split(/\s+/)
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase() || "PR";
 
-        const time = v.submitted_at
-          ? formatTimeAgo(v.submitted_at)
-          : (v.submittedTime || "Recently");
+      const time = v.submitted_at
+        ? formatTimeAgo(v.submitted_at)
+        : (v.submittedTime || "Recently");
 
-        return {
-          id,
-          initials,
-          name,
-          time,
-          level: v.verification_level
-            ? `Level ${v.verification_level === "verified" ? "2" : "1"}`
-            : (v.level || "Level 2"),
-          category: v.category || v.phone || "Service Provider",
-          raw: v,
-        };
-      })
+      return {
+        id,
+        initials,
+        name,
+        time,
+        level: v.verification_level
+          ? `Level ${v.verification_level === "verified" ? "2" : "1"}`
+          : (v.level || "Level 2"),
+        category: v.category || v.phone || "Service Provider",
+        raw: v,
+      };
+    })
     : [];
 
   // Purely dynamic Reports items from live API (no static mock data)
   const displayReports = Array.isArray(reports)
     ? reports.slice(0, 5).map((r) => {
-        const id = r.report_id || r.id;
-        const name = r.reported_user_name || r.reportedUser || "Reported User";
-        const issue = formatReportReason(r.reason);
-        const reasonLower = (r.reason || "").toLowerCase();
+      const id = r.report_id || r.id;
+      const name = r.reported_user_name || r.reportedUser || "Reported User";
+      const issue = formatReportReason(r.reason);
+      const reasonLower = (r.reason || "").toLowerCase();
 
-        let icon = AlertTriangle;
-        let color = "text-amber-600 bg-amber-50";
+      let icon = AlertTriangle;
+      let color = "text-amber-600 bg-amber-50";
 
-        if (reasonLower.includes("late")) {
-          icon = Clock;
-          color = "text-rose-600 bg-rose-50";
-        } else if (reasonLower.includes("fake") || reasonLower.includes("identity")) {
-          icon = UserX;
-          color = "text-rose-600 bg-rose-50";
-        } else if (reasonLower.includes("payment") || reasonLower.includes("money")) {
-          icon = CreditCard;
-          color = "text-rose-600 bg-rose-50";
-        }
+      if (reasonLower.includes("late")) {
+        icon = Clock;
+        color = "text-rose-600 bg-rose-50";
+      } else if (reasonLower.includes("fake") || reasonLower.includes("identity")) {
+        icon = UserX;
+        color = "text-rose-600 bg-rose-50";
+      } else if (reasonLower.includes("payment") || reasonLower.includes("money")) {
+        icon = CreditCard;
+        color = "text-rose-600 bg-rose-50";
+      }
 
-        return {
-          id,
-          type: "warning",
-          icon,
-          color,
-          name,
-          issue,
-          raw: r,
-        };
-      })
+      return {
+        id,
+        type: "warning",
+        icon,
+        color,
+        name,
+        issue,
+        raw: r,
+      };
+    })
     : [];
 
   return (
@@ -421,116 +415,6 @@ export default function DashboardOverview({
               <span>Manage safety & reports</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section: Provider Density Map */}
-      <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-gray-900">
-              Provider Density
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Real-time geographical concentration of verified workforce
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {stats.activeToday ? `${stats.activeToday} Online Active` : (stats.totalProviders ? `${stats.totalProviders} Total Providers` : "Workforce Active")}
-            </span>
-          </div>
-        </div>
-
-        {/* Map Visualization Container */}
-        <div className="relative w-full h-72 sm:h-80 bg-[#17252a] rounded-xl overflow-hidden border border-gray-800 flex items-center justify-center">
-          {/* Simulated Dark Mode City Map Grid & Road Lines */}
-          <svg
-            className="absolute inset-0 w-full h-full opacity-30"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <pattern
-                id="mapGrid"
-                width="40"
-                height="40"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 40 0 L 0 0 0 40"
-                  fill="none"
-                  stroke="#3aafa9"
-                  strokeWidth="0.5"
-                />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#mapGrid)" />
-            {/* River curve */}
-            <path
-              d="M 50 0 C 150 100, 200 180, 260 320"
-              stroke="#204051"
-              strokeWidth="16"
-              fill="none"
-              opacity="0.8"
-            />
-            {/* Main transit arteries */}
-            <path
-              d="M 0 120 Q 200 130 500 110"
-              stroke="#2b7a78"
-              strokeWidth="2.5"
-              fill="none"
-              opacity="0.4"
-            />
-            <path
-              d="M 180 0 L 220 320"
-              stroke="#2b7a78"
-              strokeWidth="2.5"
-              fill="none"
-              opacity="0.4"
-            />
-            <path
-              d="M 380 0 L 320 320"
-              stroke="#2b7a78"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.4"
-            />
-          </svg>
-
-          {/* Hotspot pulses across zone */}
-          {NETWORK_HOTSPOTS.map((hotspot, idx) => (
-            <div
-              key={idx}
-              style={{ left: `${hotspot.x}%`, top: `${hotspot.y}%` }}
-              onClick={() => setSelectedHotspot(hotspot)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
-            >
-              {/* Pulse rings */}
-              <span className="absolute -inset-3 rounded-full bg-emerald-400/20 animate-ping" />
-              <span className="absolute -inset-1.5 rounded-full bg-teal-400/40" />
-              <span className="relative block w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-emerald-950 shadow-lg shadow-emerald-400/50 group-hover:scale-125 transition-transform" />
-
-              {/* Tooltip on hover */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center pointer-events-none z-20">
-                <div className="bg-gray-900/95 text-white text-[11px] font-medium px-2.5 py-1 rounded-md shadow-xl border border-gray-700 whitespace-nowrap">
-                  <span className="font-bold text-emerald-400">{hotspot.city}</span>: {hotspot.count} Active Providers
-                </div>
-                <div className="w-1.5 h-1.5 bg-gray-900/95 rotate-45 -mt-1" />
-              </div>
-            </div>
-          ))}
-
-          {/* Central Live Activity Badge as shown in Screenshot 2 */}
-          <div className="relative z-10 px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200/80 flex items-center gap-2 text-gray-800 text-xs font-bold tracking-wide">
-            <MapPin className="w-4 h-4 text-[#16654e]" />
-            <span>location_on Live Network Activity</span>
-          </div>
-
-          {/* Zone Stats Overlay in bottom corner */}
-          <div className="absolute bottom-3 left-3 bg-gray-900/80 backdrop-blur-md border border-gray-700/80 rounded-lg px-3 py-1.5 text-[11px] text-gray-300">
-            Coverage: <span className="text-emerald-400 font-semibold">98.4% Metropolitan Area</span>
           </div>
         </div>
       </div>
