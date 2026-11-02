@@ -1,44 +1,90 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle,
   Eye,
-  FileCheck,
   ChevronLeft,
   ChevronRight,
-  Filter,
   Search,
-  Check,
-  Clock,
-  ShieldCheck,
-  User
+  RotateCw,
 } from "lucide-react";
+import { adminService } from "@/lib/adminService";
 
 export default function VerificationRequests({
-  verifications,
+  verifications: initialVerifications,
   stats,
-  onReviewDocuments
+  onReviewDocuments,
+  onRefresh,
 }) {
-  const [activeFilter, setActiveFilter] = useState("all"); // "all", "level1", "level2"
+  const [items, setItems] = useState(initialVerifications || []);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState(null);
 
-  // Normalize and filter items
-  const normalizedList = (verifications || []).map((item) => {
+  const pageSize = 10;
+
+  // Fetch pending verifications directly from API (no cache)
+  const fetchVerifications = useCallback(async (page = 1) => {
+    setIsLoading(true);
+    try {
+      const data = await adminService.getPendingVerifications(page, pageSize);
+      if (data && Array.isArray(data.items)) {
+        setItems(data.items);
+        const total = data.total ?? data.items.length;
+        setTotalCount(total);
+        setTotalPages(data.total_pages ?? Math.max(1, Math.ceil(total / pageSize)));
+      }
+    } catch (err) {
+      console.warn("Could not fetch live pending verifications:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pageSize]);
+
+  // Initial fetch and fetch on page change
+  useEffect(() => {
+    fetchVerifications(currentPage);
+  }, [currentPage, fetchVerifications]);
+
+  // Sync if prop updates from parent
+  useEffect(() => {
+    if (Array.isArray(initialVerifications) && initialVerifications.length > 0) {
+      setItems(initialVerifications);
+    }
+  }, [initialVerifications]);
+
+  // Normalize items from API
+  const normalizedList = (items || []).map((item) => {
     const id = item.user_id || item.id;
     const name = item.name || "Provider";
     const phone = item.phone || "N/A";
-    const avatar = item.photo_url || item.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+    const avatar =
+      item.photo_url ||
+      item.avatar ||
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
     const category = item.category || "Professional Service";
     const regDate = item.submitted_at
-      ? new Date(item.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-      : (item.regDate || "Recent");
-    const isLevel2 = item.verification_level === "verified" || item.levelType === "level2" || Boolean(item.nid_url_front);
+      ? new Date(item.submitted_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : item.regDate || "Recent";
+    const isLevel2 =
+      item.verification_level === "verified" ||
+      item.levelType === "level2" ||
+      Boolean(item.nid_url_front);
     const level = isLevel2 ? "Level 2 (Document)" : "Level 1 (Basic)";
     const levelType = isLevel2 ? "level2" : "level1";
-    const status = (item.verification_status || item.status || "PENDING").toUpperCase();
+    const status = (
+      item.verification_status ||
+      item.status ||
+      "PENDING"
+    ).toUpperCase();
 
     return {
       ...item,
@@ -58,9 +104,8 @@ export default function VerificationRequests({
     };
   });
 
+  // Client-side search filtering over normalized list
   const filteredList = normalizedList.filter((item) => {
-    if (activeFilter === "level1" && item.levelType !== "level1") return false;
-    if (activeFilter === "level2" && item.levelType !== "level2") return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -71,13 +116,6 @@ export default function VerificationRequests({
     }
     return true;
   });
-
-  const pageSize = 5;
-  const totalPages = Math.ceil(filteredList.length / pageSize) || 1;
-  const paginatedList = filteredList.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
 
   return (
     <div className="space-y-6">
@@ -92,62 +130,33 @@ export default function VerificationRequests({
           </p>
         </div>
 
-        {/* Search input */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search provider name or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
-          />
+        {/* Action controls: Search & Refresh */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search provider name or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
+            />
+          </div>
+
+          <button
+            onClick={() => {
+              fetchVerifications(currentPage);
+              if (onRefresh) onRefresh();
+            }}
+            disabled={isLoading}
+            className="p-2 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 text-gray-600 transition cursor-pointer shadow-2xs disabled:opacity-50"
+            title="Refresh verification requests"
+          >
+            <RotateCw
+              className={`w-4 h-4 ${isLoading ? "animate-spin text-[#16654e]" : ""}`}
+            />
+          </button>
         </div>
-      </div>
-
-      {/* Filter Tabs matching Screenshot 3 */}
-      <div className="flex border-b border-gray-200 gap-8 text-sm">
-        <button
-          onClick={() => {
-            setActiveFilter("all");
-            setCurrentPage(1);
-          }}
-          className={`pb-3 font-semibold transition cursor-pointer relative ${
-            activeFilter === "all"
-              ? "text-[#16654e] border-b-2 border-[#16654e]"
-              : "text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          All
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveFilter("level1");
-            setCurrentPage(1);
-          }}
-          className={`pb-3 font-semibold transition cursor-pointer relative ${
-            activeFilter === "level1"
-              ? "text-[#16654e] border-b-2 border-[#16654e]"
-              : "text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          Basic (Level 1)
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveFilter("level2");
-            setCurrentPage(1);
-          }}
-          className={`pb-3 font-semibold transition cursor-pointer relative ${
-            activeFilter === "level2"
-              ? "text-[#16654e] border-b-2 border-[#16654e]"
-              : "text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          Document Pending (Level 2)
-        </button>
       </div>
 
       {/* Table Container */}
@@ -166,20 +175,24 @@ export default function VerificationRequests({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {paginatedList.length === 0 ? (
+              {filteredList.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#16654e] flex items-center justify-center mb-2">
                         <CheckCircle className="w-5 h-5" />
                       </div>
-                      <p className="font-semibold text-gray-800 text-sm">No verification requests</p>
-                      <p className="text-xs text-gray-400 mt-0.5">All provider accounts and documents are up to date.</p>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        No verification requests
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        All provider accounts and documents are up to date.
+                      </p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                paginatedList.map((item) => (
+                filteredList.map((item) => (
                   <tr
                     key={item.id}
                     className="hover:bg-gray-50/70 transition-colors group"
@@ -267,55 +280,42 @@ export default function VerificationRequests({
           </table>
         </div>
 
-        {/* Table Footer & Pagination matching Screenshot 3 */}
+        {/* Table Footer & Pagination */}
         <div className="py-3.5 px-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
           <div>
-            Showing {filteredList.length === 0 ? 0 : Math.min(filteredList.length, pageSize)} of {filteredList.length} requests
+            Showing {filteredList.length === 0 ? 0 : filteredList.length} of{" "}
+            {totalCount || filteredList.length} requests
           </div>
 
           <div className="flex items-center gap-1">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage <= 1 || isLoading}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
-                currentPage === 1
-                  ? "bg-[#16654e] text-white"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage(2)}
-              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
-                currentPage === 2
-                  ? "bg-[#16654e] text-white"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              2
-            </button>
-            <button
-              onClick={() => setCurrentPage(3)}
-              className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
-                currentPage === 3
-                  ? "bg-[#16654e] text-white"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              3
-            </button>
+            {Array.from({ length: Math.min(5, totalPages || 1) }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  disabled={isLoading}
+                  className={`w-7 h-7 rounded-md font-semibold flex items-center justify-center cursor-pointer ${
+                    currentPage === pageNum
+                      ? "bg-[#16654e] text-white"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            )}
 
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages || isLoading}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
@@ -324,7 +324,7 @@ export default function VerificationRequests({
         </div>
       </div>
 
-      {/* Bottom Summary Card (from Screenshot 3) */}
+      {/* Bottom Summary Card */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Left Sub-card: Approved Today */}
         <div className="md:col-span-3 bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col justify-between">
@@ -337,7 +337,7 @@ export default function VerificationRequests({
 
           <div className="mt-4">
             <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              {stats.approvedToday}
+              {stats?.approvedToday ?? 0}
             </div>
             <p className="text-xs font-medium text-gray-500 mt-1">
               Approved Today
@@ -352,18 +352,24 @@ export default function VerificationRequests({
               Pending Verification Queue
             </h3>
             <p className="text-xs text-gray-500 mt-1 max-w-xl">
-              Average review time: {stats.avgReviewTimeHours} hours. Keep the ecosystem trusted and professional.
+              Average review time: {stats?.avgReviewTimeHours || 4.2} hours. Keep the ecosystem trusted and professional.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-6 mt-4 pt-3 border-t border-gray-100 text-xs font-semibold">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-gray-700">{stats.pendingDocsCount} Pending Docs</span>
+              <span className="text-gray-700">
+                {totalCount || stats?.pendingVerifications || 0} Pending Docs
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#16654e]" />
-              <span className="text-gray-700">{stats.basicWaitingCount} Basic Waiting</span>
+              <span className="text-gray-700">
+                {stats?.activeToday
+                  ? `${stats.activeToday} Active Providers`
+                  : "Real-time Verification Status"}
+              </span>
             </div>
           </div>
         </div>
@@ -408,19 +414,27 @@ export default function VerificationRequests({
               <div className="bg-gray-50 rounded-xl p-3.5 space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Verification Level:</span>
-                  <span className="font-semibold text-gray-900">{selectedProfile.level}</span>
+                  <span className="font-semibold text-gray-900">
+                    {selectedProfile.level}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Registration Date:</span>
-                  <span className="font-semibold text-gray-900">{selectedProfile.regDate}</span>
+                  <span className="font-semibold text-gray-900">
+                    {selectedProfile.regDate}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">National ID:</span>
-                  <span className="font-mono text-gray-900 font-semibold">{selectedProfile.nidNumber || "Verified"}</span>
+                  <span className="font-mono text-gray-900 font-semibold">
+                    {selectedProfile.nidNumber || "Verified"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Service Coverage:</span>
-                  <span className="font-semibold text-gray-900">{selectedProfile.address || "Dhaka Division"}</span>
+                  <span className="font-semibold text-gray-900">
+                    {selectedProfile.address || "Dhaka Division"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -439,4 +453,3 @@ export default function VerificationRequests({
     </div>
   );
 }
-

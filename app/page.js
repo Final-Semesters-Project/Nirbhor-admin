@@ -336,6 +336,7 @@ export default function App() {
               verifications={verifications}
               stats={stats}
               onReviewDocuments={handleReviewWorker}
+              onRefresh={fetchDashboardData}
             />
           )}
 
