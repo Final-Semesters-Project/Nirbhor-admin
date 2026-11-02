@@ -11,6 +11,8 @@ import UserManagement from "@/components/screens/UserManagement";
 import AnalyticsScreen from "@/components/screens/AnalyticsScreen";
 import AdminManagement from "@/components/screens/AdminManagement";
 import AuditLogsScreen from "@/components/screens/AuditLogsScreen";
+import CategoryManagement from "@/components/screens/CategoryManagement";
+import SkillManagement from "@/components/screens/SkillManagement";
 import {
   Menu,
   Bell,
@@ -51,6 +53,7 @@ export default function App() {
   const [reports, setReports] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
   const [toastNotification, setToastNotification] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -302,6 +305,10 @@ export default function App() {
                   ? "Admin Management"
                   : activeTab === "audit_logs"
                   ? "Audit Logs"
+                  : activeTab === "categories"
+                  ? "Category Management"
+                  : activeTab === "skills"
+                  ? "Skill Management"
                   : activeTab.replace("_", " ")}
               </span>
             </div>
@@ -361,6 +368,19 @@ export default function App() {
               onApprove={handleApproveWorker}
               onReject={handleRejectWorker}
             />
+          )}
+
+          {activeTab === "categories" && (
+            <CategoryManagement
+              onNavigateToSkills={(catId) => {
+                setSelectedCategoryFilter(catId);
+                setActiveTab("skills");
+              }}
+            />
+          )}
+
+          {activeTab === "skills" && (
+            <SkillManagement initialCategoryFilter={selectedCategoryFilter} />
           )}
 
           {activeTab === "reports" && (

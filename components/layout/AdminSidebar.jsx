@@ -13,7 +13,9 @@ import {
   ShieldAlert,
   KeyRound,
   FileText,
-  UserCog
+  UserCog,
+  FolderTree,
+  Wrench,
 } from "lucide-react";
 
 export default function AdminSidebar({
@@ -32,6 +34,18 @@ export default function AdminSidebar({
       id: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
+      badge: null
+    },
+    {
+      id: "categories",
+      label: "Categories",
+      icon: FolderTree,
+      badge: null
+    },
+    {
+      id: "skills",
+      label: "Skills",
+      icon: Wrench,
       badge: null
     },
     {
