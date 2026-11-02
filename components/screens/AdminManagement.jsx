@@ -38,16 +38,16 @@ export default function AdminManagement({
 
   // Toggle Suspend / Activate
   const handleToggleStatus = (id) => {
+    const targetAdmin = admins.find((adm) => adm.id === id);
+    if (!targetAdmin) return;
+
+    const nextStatus = targetAdmin.status === "Active" ? "Inactive" : "Active";
     setAdmins((prev) =>
-      prev.map((adm) => {
-        if (adm.id === id) {
-          const nextStatus = adm.status === "Active" ? "Inactive" : "Active";
-          showToast(`Admin ${adm.name} has been ${nextStatus === "Active" ? "activated" : "suspended"}.`);
-          return { ...adm, status: nextStatus };
-        }
-        return adm;
-      })
+      prev.map((adm) =>
+        adm.id === id ? { ...adm, status: nextStatus } : adm
+      )
     );
+    showToast(`Admin ${targetAdmin.name} has been ${nextStatus === "Active" ? "activated" : "suspended"}.`);
   };
 
   const handleAdminCreated = (newAdmin) => {

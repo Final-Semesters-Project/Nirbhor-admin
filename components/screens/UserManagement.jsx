@@ -34,16 +34,16 @@ export default function UserManagement() {
 
   // Toggle user status (Active <-> Suspended)
   const handleToggleStatus = (id) => {
+    const targetUser = users.find((user) => user.id === id);
+    if (!targetUser) return;
+
+    const newStatus = targetUser.status === "Active" ? "Suspended" : "Active";
     setUsers((prev) =>
-      prev.map((user) => {
-        if (user.id === id) {
-          const newStatus = user.status === "Active" ? "Suspended" : "Active";
-          showToast(`User ${user.name} status updated to ${newStatus}.`);
-          return { ...user, status: newStatus };
-        }
-        return user;
-      })
+      prev.map((user) =>
+        user.id === id ? { ...user, status: newStatus } : user
+      )
     );
+    showToast(`User ${targetUser.name} status updated to ${newStatus}.`);
   };
 
   // Filter application
