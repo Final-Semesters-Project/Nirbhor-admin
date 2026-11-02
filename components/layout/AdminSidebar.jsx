@@ -25,6 +25,8 @@ export default function AdminSidebar({
   isMobileOpen,
   setIsMobileOpen
 }) {
+  const userRole = (currentUser?.role || "").toLowerCase().replace(/[\s_-]/g, "");
+  const isSuperAdmin = userRole === "superadmin";
   const coreModules = [
     {
       id: "dashboard",
@@ -153,46 +155,48 @@ export default function AdminSidebar({
             </nav>
           </div>
 
-          {/* 2. Super Admin / Access Control Section matching Screenshot 1 & 3 */}
-          <div className="p-3 pt-1 border-t border-white/10 mt-1">
-            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-200/60 block mb-1.5">
-              SUPER ADMIN / ACCESS CONTROL
-            </span>
-            <nav className="space-y-1">
-              {superAdminModules.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
+          {/* 2. Super Admin / Access Control Section (visible only to Super Admin) */}
+          {isSuperAdmin && (
+            <div className="p-3 pt-1 border-t border-white/10 mt-1">
+              <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-200/60 block mb-1.5">
+                SUPER ADMIN / ACCESS CONTROL
+              </span>
+              <nav className="space-y-1">
+                {superAdminModules.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
 
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      if (setIsMobileOpen) setIsMobileOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
-                      isActive
-                        ? "bg-white/20 text-white shadow-sm font-semibold backdrop-blur-xs"
-                        : "text-emerald-100/80 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-4 h-4 transition-transform group-hover:scale-105 ${
-                          isActive ? "text-white" : "text-emerald-200/80"
-                        }`}
-                      />
-                      <span>{item.label}</span>
-                    </div>
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        if (setIsMobileOpen) setIsMobileOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
+                        isActive
+                          ? "bg-white/20 text-white shadow-sm font-semibold backdrop-blur-xs"
+                          : "text-emerald-100/80 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          className={`w-4 h-4 transition-transform group-hover:scale-105 ${
+                            isActive ? "text-white" : "text-emerald-200/80"
+                          }`}
+                        />
+                        <span>{item.label}</span>
+                      </div>
 
-                    <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-white/10 text-emerald-200">
-                      SUPER
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+                      <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-white/10 text-emerald-200">
+                        SUPER
+                      </span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          )}
         </div>
 
         {/* Bottom Super Admin User Profile Card matching Screenshots */}
@@ -200,17 +204,25 @@ export default function AdminSidebar({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-10 h-10 rounded-full bg-emerald-900 border-2 border-emerald-300/40 flex items-center justify-center text-white font-bold text-xs">
-                  TM
+                <div className="w-10 h-10 rounded-full bg-emerald-950/80 border-2 border-emerald-400/30 flex items-center justify-center text-white font-bold text-xs shadow-inner">
+                  {currentUser?.name
+                    ? currentUser.name
+                        .split(" ")
+                        .filter(Boolean)
+                        .map((w) => w[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()
+                    : "AD"}
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#12574b] rounded-full" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-white leading-tight truncate">
-                  {currentUser?.name || "Tanvir Mahmud"}
+                  {currentUser?.name || "Admin"}
                 </p>
                 <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-300/90 mt-0.5">
-                  {currentUser?.role || "SUPER ADMIN"}
+                  {currentUser?.role || (isSuperAdmin ? "SUPER ADMIN" : "ADMIN")}
                 </span>
               </div>
             </div>

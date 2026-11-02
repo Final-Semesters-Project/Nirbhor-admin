@@ -54,6 +54,20 @@ export default function App() {
   const [toastNotification, setToastNotification] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const userRole = (currentUser?.role || "").toLowerCase().replace(/[\s_-]/g, "");
+  const isSuperAdmin = userRole === "superadmin";
+
+  // Protect Super Admin views from unauthorized regular admin access
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !isSuperAdmin &&
+      (activeTab === "admin_management" || activeTab === "audit_logs")
+    ) {
+      setActiveTab("dashboard");
+    }
+  }, [isAuthenticated, isSuperAdmin, activeTab]);
+
   const showToast = (message) => {
     setToastNotification(message);
     setTimeout(() => {
@@ -362,11 +376,11 @@ export default function App() {
 
           {activeTab === "analytics" && <AnalyticsScreen />}
 
-          {activeTab === "admin_management" && (
+          {isSuperAdmin && activeTab === "admin_management" && (
             <AdminManagement admins={admins} setAdmins={setAdmins} />
           )}
 
-          {activeTab === "audit_logs" && <AuditLogsScreen />}
+          {isSuperAdmin && activeTab === "audit_logs" && <AuditLogsScreen />}
         </main>
       </div>
     </div>

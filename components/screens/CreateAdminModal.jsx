@@ -80,11 +80,12 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
       const created = await adminService.createAdmin({
         phone: phoneNumber.replace(/[\s-]/g, ""),
         password,
-        name_en: fullName,
-        name_bn: fullName,
+        name_en: fullName.trim(),
+        name_bn: fullName.trim(),
       });
 
       const initials = fullName
+        .trim()
         .split(" ")
         .map((n) => n[0])
         .slice(0, 2)
@@ -92,20 +93,22 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
         .toUpperCase();
 
       const newAdmin = {
-        id: String(created?.user_id || `ADM-0${Math.floor(10 + Math.random() * 90)}`),
+        id: String(created?.user_id || `ADM-${Date.now()}`),
         user_id: String(created?.user_id || ""),
-        name: fullName,
+        name: fullName.trim(),
         initials: initials || "AD",
-        phone: phoneNumber,
-        status: "Active",
-        createdDate: new Date().toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric"
-        }),
-        lastActive: "Just now",
-        role: role,
-        email: `${fullName.toLowerCase().replace(/\s+/g, ".")}@nirbhor.com`
+        phone: phoneNumber.replace(/[\s-]/g, ""),
+        status: created?.is_active !== undefined ? (created.is_active ? "Active" : "Inactive") : "Active",
+        createdDate: created?.created_at
+          ? new Date(created.created_at).toLocaleDateString("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric"
+            })
+          : "Just now",
+        lastActive: "Never",
+        role: created?.role || role,
+        email: `${fullName.trim().toLowerCase().replace(/\s+/g, ".")}@nirbhor.com`
       };
 
       onAdminCreated(newAdmin);
@@ -166,7 +169,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
               placeholder="e.g. Tanvir Hossain"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
             />
           </div>
 
@@ -178,7 +181,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#146356] cursor-pointer"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#16654e] cursor-pointer"
             >
               <option value="Verification Admin">Verification Admin</option>
               <option value="Safety & Moderation Admin">Safety & Moderation Admin</option>
@@ -208,7 +211,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
                 className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition ${
                   phoneError
                     ? "border-red-300 focus:ring-red-400 bg-red-50/20"
-                    : "border-gray-200 focus:ring-[#146356]"
+                    : "border-gray-200 focus:ring-[#16654e]"
                 }`}
               />
               {phoneError && (
@@ -235,7 +238,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+                className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
               />
               <button
                 type="button"
@@ -262,7 +265,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
                 placeholder="••••••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+                className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
               />
               <button
                 type="button"
@@ -291,7 +294,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#146356] hover:bg-[#104e43] text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#16654e] hover:bg-[#125340] text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
             >
               <UserPlus className="w-4 h-4" />
               <span>{isSubmitting ? "Creating..." : "Create Admin"}</span>

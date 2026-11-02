@@ -26,7 +26,7 @@ export default function AuditLogsScreen() {
   const [logs, setLogs] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState("All Admins");
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState("10/01/2026 - 10/18/2026");
+  const [dateRange, setDateRange] = useState("Last 30 Days");
   const [selectedLogModal, setSelectedLogModal] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,37 +40,53 @@ export default function AuditLogsScreen() {
     setIsLoading(true);
     try {
       const data = await adminService.getAuditLogs();
-      if (Array.isArray(data)) {
-        const mapped = data.map((log) => {
-          const actionLower = (log.action || "").toLowerCase();
-          const isNegative = actionLower.includes("reject") || actionLower.includes("suspend") || actionLower.includes("delete");
-          const isPositive = actionLower.includes("approve") || actionLower.includes("verify");
-          return {
-            id: String(log.log_id),
-            admin: log.admin_name || "Admin",
-            adminRole: log.admin_role === "super_admin" ? "Super Admin" : "Admin",
-            actionType: log.action || "Updated",
-            actionColor: isNegative ? "rose" : isPositive ? "emerald" : "blue",
-            iconType: isPositive ? "check" : isNegative ? "slash" : "user_plus",
-            description: `${log.action} ${log.target_user_name ? "for " + log.target_user_name : ""}`,
-            target: log.target_user_name || "System Record",
-            timestamp: log.performed_at
-              ? new Date(log.performed_at).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })
-              : "Recently",
-            ip: "Secure Session",
-            details: log.details || "Administrative event audited and committed to immutable storage."
-          };
-        });
-        setLogs(mapped);
-      }
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+      const mapped = list.map((log) => {
+        const actionLower = (log.action || "").toLowerCase();
+        const isNegative =
+          actionLower.includes("reject") ||
+          actionLower.includes("suspend") ||
+          actionLower.includes("delete");
+        const isPositive =
+          actionLower.includes("approve") || actionLower.includes("verify");
+        return {
+          id: String(log.log_id || log.id),
+          admin: log.admin_name || log.admin || "Admin",
+          adminRole:
+            log.admin_role === "super_admin" || log.role === "super_admin"
+              ? "Super Admin"
+              : "Admin",
+          actionType: log.action || "Updated",
+          actionColor: isNegative ? "rose" : isPositive ? "emerald" : "blue",
+          iconType: isPositive ? "check" : isNegative ? "slash" : "user_plus",
+          description: `${log.action || "Audit record"} ${
+            log.target_user_name ? "for " + log.target_user_name : ""
+          }`,
+          target: log.target_user_name || log.target || "System Record",
+          target_user_id: log.target_user_id,
+          timestamp: log.performed_at || log.created_at
+            ? new Date(log.performed_at || log.created_at).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "Recently",
+          ip: log.ip_address || "Secure Session",
+          details:
+            log.details ||
+            "Administrative event audited and committed to immutable storage.",
+        };
+      });
+      setLogs(mapped);
     } catch (err) {
-      console.warn("Could not fetch audit logs from API, using fallback data:", err.message);
+      console.warn("Could not fetch audit logs from API:", err.message);
     } finally {
       setIsLoading(false);
     }
@@ -83,13 +99,40 @@ export default function AuditLogsScreen() {
   const handleResetFilters = () => {
     setSelectedAdmin("All Admins");
     setSearchQuery("");
-    setDateRange("10/01/2026 - 10/18/2026");
+    setDateRange("Last 30 Days");
     showToast("Audit filters reset.");
   };
 
   const handleExport = () => {
-    showToast("Audit logs exported successfully as encrypted CSV.");
+    if (filteredLogs.length === 0) {
+      showToast("No audit logs available to export.");
+      return;
+    }
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [
+        "Log ID,Admin Name,Admin Role,Action,Target Entity,Details,Timestamp",
+        ...filteredLogs.map(
+          (l) =>
+            `"${l.id}","${l.admin}","${l.adminRole}","${l.actionType}","${l.target || ""}","${(l.details || "").replace(/"/g, '""')}","${l.timestamp}"`
+        ),
+      ].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `nirbhor_audit_logs_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast("Audit logs exported successfully as CSV.");
   };
+
+  const uniqueAdmins = Array.from(new Set(logs.map((l) => l.admin).filter(Boolean)));
 
   const filteredLogs = logs.filter((item) => {
     if (selectedAdmin !== "All Admins" && item.admin !== selectedAdmin) {
@@ -135,7 +178,7 @@ export default function AuditLogsScreen() {
           <button
             onClick={fetchLogs}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#146356] shadow-2xs transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#16654e] shadow-2xs transition cursor-pointer disabled:opacity-50"
             title="Refresh Live Audit Stream"
           >
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -167,13 +210,14 @@ export default function AuditLogsScreen() {
             <select
               value={selectedAdmin}
               onChange={(e) => setSelectedAdmin(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#146356] cursor-pointer"
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16654e] cursor-pointer"
             >
               <option value="All Admins">All Admins</option>
-              <option value="Tanvir Mahmud">Tanvir Mahmud (Super Admin)</option>
-              <option value="Karim Hossain">Karim Hossain (Admin)</option>
-              <option value="Tariqul Islam">Tariqul Islam (Admin)</option>
-              <option value="Nusrat Jahan">Nusrat Jahan (Admin)</option>
+              {uniqueAdmins.map((adm) => (
+                <option key={adm} value={adm}>
+                  {adm}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -188,7 +232,7 @@ export default function AuditLogsScreen() {
                 type="text"
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
               />
             </div>
           </div>
@@ -205,7 +249,7 @@ export default function AuditLogsScreen() {
                 placeholder="Search keywords, IDs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
               />
             </div>
           </div>
@@ -222,7 +266,7 @@ export default function AuditLogsScreen() {
 
             <button
               onClick={handleExport}
-              className="flex-1 py-2 px-2.5 bg-[#146356] hover:bg-[#104e43] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
+              className="flex-1 py-2 px-2.5 bg-[#16654e] hover:bg-[#125340] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export</span>
@@ -235,7 +279,7 @@ export default function AuditLogsScreen() {
       <div className="bg-white rounded-2xl border border-gray-200/90 p-6 shadow-2xs">
         {filteredLogs.length === 0 ? (
           <div className="py-12 text-center flex flex-col items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#146356] flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#16654e] flex items-center justify-center mb-2">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <p className="font-semibold text-gray-800 text-sm">No audit logs recorded</p>
@@ -327,7 +371,7 @@ export default function AuditLogsScreen() {
 
                         <button
                           onClick={() => setSelectedLogModal(log)}
-                          className="text-xs font-semibold text-[#146356] hover:text-[#0e483e] hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+                          className="text-xs font-semibold text-[#16654e] hover:text-[#0e483e] hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
                         >
                           <span>Details</span>
                           <span>&gt;</span>
@@ -361,7 +405,7 @@ export default function AuditLogsScreen() {
           >
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-[#146356]" />
+                <Shield className="w-5 h-5 text-[#16654e]" />
                 <h3 className="font-bold text-base text-gray-900">
                   Immutable Audit Record ({selectedLogModal.id})
                 </h3>
@@ -413,7 +457,7 @@ export default function AuditLogsScreen() {
             <div className="pt-3 border-t border-gray-100 flex justify-end">
               <button
                 onClick={() => setSelectedLogModal(null)}
-                className="px-4 py-2 text-xs font-semibold bg-[#146356] text-white rounded-xl cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold bg-[#16654e] text-white rounded-xl cursor-pointer"
               >
                 Close Audit Record
               </button>

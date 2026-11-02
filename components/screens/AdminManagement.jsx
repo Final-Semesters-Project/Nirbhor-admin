@@ -44,40 +44,47 @@ export default function AdminManagement({
     setIsLoading(true);
     try {
       const data = await adminService.getAdmins();
-      if (Array.isArray(data)) {
-        const mapped = data.map((adm) => {
-          const initials = (adm.name || "Admin")
-            .split(" ")
-            .map((n) => n[0])
-            .slice(0, 2)
-            .join("")
-            .toUpperCase();
-          return {
-            id: String(adm.user_id),
-            user_id: String(adm.user_id),
-            name: adm.name,
-            initials: initials || "AD",
-            phone: adm.phone,
-            status: adm.is_active ? "Active" : "Inactive",
-            createdDate: adm.created_at
-              ? new Date(adm.created_at).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric"
-                })
-              : "N/A",
-            lastActive: adm.last_active_at
-              ? new Date(adm.last_active_at).toLocaleDateString("en-GB", {
-                  month: "short",
-                  day: "numeric"
-                })
-              : "Never",
-            role: adm.role ? `${adm.role.charAt(0).toUpperCase() + adm.role.slice(1)} Admin` : "Admin",
-            email: `${adm.name.toLowerCase().replace(/\s+/g, ".")}@nirbhor.com`
-          };
-        });
-        setAdmins(mapped);
-      }
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+      const mapped = list.map((adm) => {
+        const adminName = adm.name || adm.name_en || adm.username || "Admin";
+        const initials = adminName
+          .split(" ")
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase();
+        return {
+          id: String(adm.user_id || adm.id),
+          user_id: String(adm.user_id || adm.id),
+          name: adminName,
+          initials: initials || "AD",
+          phone: adm.phone || "N/A",
+          status: adm.is_active ? "Active" : "Inactive",
+          createdDate: adm.created_at
+            ? new Date(adm.created_at).toLocaleDateString("en-US", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+              })
+            : "N/A",
+          lastActive: adm.last_active_at
+            ? new Date(adm.last_active_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric"
+              })
+            : "Never",
+          role: adm.role
+            ? `${adm.role.charAt(0).toUpperCase() + adm.role.slice(1).toLowerCase()} Admin`
+            : "Admin",
+          email: adm.email || `${adminName.toLowerCase().replace(/\s+/g, ".")}@nirbhor.com`
+        };
+      });
+      setAdmins(mapped);
     } catch (err) {
       console.warn("Could not fetch admins from API, using local state:", err.message);
     } finally {
@@ -128,11 +135,11 @@ export default function AdminManagement({
     );
   });
 
-  const pageSize = 5;
-  const paginatedAdmins = filteredAdmins.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const pageSize = 10;
+  const totalCount = filteredAdmins.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedAdmins = filteredAdmins.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="space-y-6">
@@ -162,7 +169,7 @@ export default function AdminManagement({
           <button
             onClick={fetchAdmins}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#146356] shadow-2xs transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#16654e] shadow-2xs transition cursor-pointer disabled:opacity-50"
             title="Refresh Live Data"
           >
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -171,7 +178,7 @@ export default function AdminManagement({
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16654e] hover:bg-[#125340] text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Admin</span>
@@ -191,32 +198,44 @@ export default function AdminManagement({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#146356]"
+            className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
           />
         </div>
 
         <span className="text-xs text-gray-400 font-medium">
-          Showing {filteredAdmins.length} of 14 platform administrators
+          Showing {filteredAdmins.length} platform administrators
         </span>
       </div>
 
-      {/* Main Table or Empty State (Light Background Theme) */}
+      {/* Main Table (Light Background Theme) */}
       <div className="bg-white rounded-2xl border border-gray-200/90 shadow-2xs overflow-hidden">
-        {filteredAdmins.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50/70 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  <th className="py-3.5 px-6">NAME</th>
-                  <th className="py-3.5 px-4">PHONE</th>
-                  <th className="py-3.5 px-4">STATUS</th>
-                  <th className="py-3.5 px-4">CREATED DATE</th>
-                  <th className="py-3.5 px-4">LAST ACTIVE</th>
-                  <th className="py-3.5 px-6 text-right">ACTIONS</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50/70 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                <th className="py-3.5 px-6">NAME</th>
+                <th className="py-3.5 px-4">PHONE</th>
+                <th className="py-3.5 px-4">STATUS</th>
+                <th className="py-3.5 px-4">CREATED DATE</th>
+                <th className="py-3.5 px-4">LAST ACTIVE</th>
+                <th className="py-3.5 px-6 text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {paginatedAdmins.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#16654e] flex items-center justify-center mb-2">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                      <p className="font-semibold text-gray-800 text-sm">No administrators found</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Use the &quot;Add New Admin&quot; button above to create administrator accounts.</p>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {paginatedAdmins.map((admin) => {
+              ) : (
+                paginatedAdmins.map((admin) => {
                   const isActive = admin.status === "Active";
 
                   return (
@@ -291,7 +310,7 @@ export default function AdminManagement({
                           ) : (
                             <button
                               onClick={() => handleToggleStatus(admin.id)}
-                              className="px-3 py-1.5 bg-[#146356] hover:bg-[#104e43] text-white rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                              className="px-3 py-1.5 bg-[#16654e] hover:bg-[#125340] text-white rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
                             >
                               Activate
                             </button>
@@ -300,51 +319,33 @@ export default function AdminManagement({
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          /* Empty State matching Screenshot 1 specification */
-          <div className="py-14 px-4 flex flex-col items-center justify-center text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 mb-3 border border-gray-200">
-              <UserX className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-bold text-gray-900">
-              No admins found
-            </h3>
-            <p className="text-xs text-gray-500 max-w-sm mt-1 mb-4">
-              Try adjusting your search query or add a new administrator.
-            </p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-bold transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Admin</span>
-            </button>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Pagination Footer matching Screenshot 1 */}
-        {filteredAdmins.length > 0 && (
+        {/* Pagination Footer */}
+        {filteredAdmins.length > pageSize && (
           <div className="py-3.5 px-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
             <div>
-              Showing 1 to {Math.min(paginatedAdmins.length, 5)} of 14 admins
+              Showing {startIndex + 1} to {Math.min(startIndex + pageSize, totalCount)} of {totalCount} admins
             </div>
 
             <div className="flex items-center gap-4">
-              <span>Page 1 of 3</span>
+              <span>Page {currentPage} of {totalPages}</span>
               <div className="flex items-center gap-2 font-medium">
                 <button
-                  disabled
-                  className="px-2.5 py-1 text-gray-400 rounded-md border border-gray-200 disabled:opacity-40 cursor-not-allowed"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="px-2.5 py-1 text-gray-700 hover:text-gray-900 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => showToast("Navigated to next page.")}
-                  className="px-2.5 py-1 text-gray-700 hover:text-gray-900 rounded-md border border-gray-200 hover:bg-gray-50 transition cursor-pointer"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="px-2.5 py-1 text-gray-700 hover:text-gray-900 rounded-md border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition"
                 >
                   Next
                 </button>
@@ -378,14 +379,14 @@ export default function AdminManagement({
 
             <div className="py-4 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#146356] font-extrabold text-base flex items-center justify-center border border-emerald-200">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#16654e] font-extrabold text-base flex items-center justify-center border border-emerald-200">
                   {selectedAdminModal.initials}
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-base">
                     {selectedAdminModal.name}
                   </h4>
-                  <p className="text-xs text-[#146356] font-semibold">
+                  <p className="text-xs text-[#16654e] font-semibold">
                     {selectedAdminModal.role}
                   </p>
                   <p className="text-xs text-gray-400 font-mono mt-0.5">
@@ -423,7 +424,7 @@ export default function AdminManagement({
             <div className="pt-3 border-t border-gray-100 flex justify-end">
               <button
                 onClick={() => setSelectedAdminModal(null)}
-                className="px-4 py-2 text-xs font-semibold bg-[#146356] text-white rounded-xl cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold bg-[#16654e] text-white rounded-xl cursor-pointer"
               >
                 Close
               </button>
