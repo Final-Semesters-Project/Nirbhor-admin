@@ -25,8 +25,40 @@ export default function VerificationRequests({
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProfile, setSelectedProfile] = useState(null);
 
-  // Filter items
-  const filteredList = verifications.filter((item) => {
+  // Normalize and filter items
+  const normalizedList = (verifications || []).map((item) => {
+    const id = item.user_id || item.id;
+    const name = item.name || "Provider";
+    const phone = item.phone || "N/A";
+    const avatar = item.photo_url || item.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+    const category = item.category || "Professional Service";
+    const regDate = item.submitted_at
+      ? new Date(item.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : (item.regDate || "Recent");
+    const isLevel2 = item.verification_level === "verified" || item.levelType === "level2" || Boolean(item.nid_url_front);
+    const level = isLevel2 ? "Level 2 (Document)" : "Level 1 (Basic)";
+    const levelType = isLevel2 ? "level2" : "level1";
+    const status = (item.verification_status || item.status || "PENDING").toUpperCase();
+
+    return {
+      ...item,
+      id,
+      user_id: id,
+      name,
+      phone,
+      avatar,
+      selfieImage: item.selfieImage || item.photo_url || avatar,
+      category,
+      regDate,
+      level,
+      levelType,
+      status,
+      nid_url_front: item.nid_url_front,
+      nid_url_back: item.nid_url_back,
+    };
+  });
+
+  const filteredList = normalizedList.filter((item) => {
     if (activeFilter === "level1" && item.levelType !== "level1") return false;
     if (activeFilter === "level2" && item.levelType !== "level2") return false;
     if (searchQuery.trim()) {
@@ -134,89 +166,103 @@ export default function VerificationRequests({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {paginatedList.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-gray-50/70 transition-colors group"
-                >
-                  {/* Photo */}
-                  <td className="py-3.5 px-4 sm:px-6">
-                    <img
-                      src={item.avatar}
-                      alt={item.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-2xs"
-                    />
-                  </td>
-
-                  {/* Name */}
-                  <td className="py-3.5 px-4 font-semibold text-gray-900">
-                    <div>{item.name}</div>
-                    <div className="text-[11px] text-gray-400 font-normal">
-                      {item.category}
+              {paginatedList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#16654e] flex items-center justify-center mb-2">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                      <p className="font-semibold text-gray-800 text-sm">No verification requests</p>
+                      <p className="text-xs text-gray-400 mt-0.5">All provider accounts and documents are up to date.</p>
                     </div>
                   </td>
-
-                  {/* Phone */}
-                  <td className="py-3.5 px-4 text-gray-600 font-mono text-xs">
-                    {item.phone}
-                  </td>
-
-                  {/* Reg Date */}
-                  <td className="py-3.5 px-4 text-gray-600 text-xs">
-                    {item.regDate}
-                  </td>
-
-                  {/* Level Badge */}
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-block text-xs font-medium px-2.5 py-1 rounded-md ${
-                        item.levelType === "level1"
-                          ? "bg-teal-50 text-teal-700 border border-teal-200/60"
-                          : "bg-gray-100 text-gray-700 border border-gray-200"
-                      }`}
-                    >
-                      {item.level}
-                    </span>
-                  </td>
-
-                  {/* Status Badge */}
-                  <td className="py-3.5 px-4">
-                    {item.status === "PENDING" ? (
-                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                        PENDING
-                      </span>
-                    ) : item.status === "APPROVED" ? (
-                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        APPROVED
-                      </span>
-                    ) : (
-                      <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-                        REJECTED
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Action Button */}
-                  <td className="py-3.5 px-4 sm:px-6 text-center">
-                    {item.status === "PENDING" ? (
-                      <button
-                        onClick={() => onReviewDocuments(item)}
-                        className="px-4 py-1.5 border border-[#16654e] text-[#16654e] hover:bg-[#16654e] hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer"
-                      >
-                        Review Documents
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setSelectedProfile(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-gray-900 text-xs font-medium transition cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View Profile</span>
-                      </button>
-                    )}
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedList.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-gray-50/70 transition-colors group"
+                  >
+                    {/* Photo */}
+                    <td className="py-3.5 px-4 sm:px-6">
+                      <img
+                        src={item.avatar}
+                        alt={item.name}
+                        className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-2xs"
+                      />
+                    </td>
+
+                    {/* Name */}
+                    <td className="py-3.5 px-4 font-semibold text-gray-900">
+                      <div>{item.name}</div>
+                      <div className="text-[11px] text-gray-400 font-normal">
+                        {item.category}
+                      </div>
+                    </td>
+
+                    {/* Phone */}
+                    <td className="py-3.5 px-4 text-gray-600 font-mono text-xs">
+                      {item.phone}
+                    </td>
+
+                    {/* Reg Date */}
+                    <td className="py-3.5 px-4 text-gray-600 text-xs">
+                      {item.regDate}
+                    </td>
+
+                    {/* Level Badge */}
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`inline-block text-xs font-medium px-2.5 py-1 rounded-md ${
+                          item.levelType === "level1"
+                            ? "bg-teal-50 text-teal-700 border border-teal-200/60"
+                            : "bg-gray-100 text-gray-700 border border-gray-200"
+                        }`}
+                      >
+                        {item.level}
+                      </span>
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="py-3.5 px-4">
+                      {item.status === "PENDING" ? (
+                        <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          PENDING
+                        </span>
+                      ) : item.status === "APPROVED" ? (
+                        <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          APPROVED
+                        </span>
+                      ) : (
+                        <span className="inline-block text-[11px] font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                          REJECTED
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Action Button */}
+                    <td className="py-3.5 px-4 sm:px-6 text-center">
+                      {item.status === "PENDING" ? (
+                        <button
+                          onClick={() => onReviewDocuments(item)}
+                          className="px-4 py-1.5 border border-[#16654e] text-[#16654e] hover:bg-[#16654e] hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                        >
+                          Review Documents
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedProfile(item)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-600 hover:text-gray-900 text-xs font-medium transition cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Profile</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -224,7 +270,7 @@ export default function VerificationRequests({
         {/* Table Footer & Pagination matching Screenshot 3 */}
         <div className="py-3.5 px-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
           <div>
-            Showing {Math.min(filteredList.length, pageSize)} of 42 requests
+            Showing {filteredList.length === 0 ? 0 : Math.min(filteredList.length, pageSize)} of {filteredList.length} requests
           </div>
 
           <div className="flex items-center gap-1">

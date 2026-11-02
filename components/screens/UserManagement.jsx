@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Filter,
@@ -14,42 +14,133 @@ import {
   User,
   Phone,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  RotateCw,
 } from "lucide-react";
-import { INITIAL_USER_MANAGEMENT } from "@/data/mockData";
+import { adminService } from "@/lib/adminService";
 
 export default function UserManagement() {
-  const [users, setUsers] = useState(INITIAL_USER_MANAGEMENT);
+  const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedUserModal, setSelectedUserModal] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Fetch users from API (always fresh, no cache)
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await adminService.getUsers(
+        roleFilter === "All" ? null : roleFilter,
+        statusFilter === "All Status" ? null : statusFilter === "Active",
+        currentPage,
+        10
+      );
+
+      if (data && Array.isArray(data.items)) {
+        const mapped = data.items.map((u) => {
+          const roleLabel =
+            typeof u.role === "string"
+              ? u.role.charAt(0).toUpperCase() + u.role.slice(1).toLowerCase()
+              : "User";
+          return {
+            id: String(u.user_id),
+            user_id: String(u.user_id),
+            name: u.name_en || u.name_bn || "User",
+            name_en: u.name_en,
+            name_bn: u.name_bn,
+            phone: u.phone,
+            role: roleLabel,
+            joinedDate: u.created_at
+              ? new Date(u.created_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric"
+                })
+              : "N/A",
+            status: u.is_active ? "Active" : "Suspended",
+            is_active: u.is_active,
+            avatar:
+              u.photo_url ||
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
+          };
+        });
+        setUsers(mapped);
+        setTotalCount(data.total || mapped.length);
+        setTotalPages(data.total_pages || Math.ceil((data.total || mapped.length) / 10) || 1);
+      }
+    } catch (err) {
+      console.warn("Falling back to local users:", err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [roleFilter, statusFilter, currentPage]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
   // Toggle user status (Active <-> Suspended)
-  const handleToggleStatus = (id) => {
+  const handleToggleStatus = async (id) => {
     const targetUser = users.find((user) => user.id === id);
     if (!targetUser) return;
 
-    const newStatus = targetUser.status === "Active" ? "Suspended" : "Active";
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, status: newStatus } : user
-      )
-    );
-    showToast(`User ${targetUser.name} status updated to ${newStatus}.`);
+    try {
+      if (id.includes("-") && id.length > 20) {
+        await adminService.toggleUserActive(id);
+      }
+      const newStatus = targetUser.status === "Active" ? "Suspended" : "Active";
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === id
+            ? { ...user, status: newStatus, is_active: newStatus === "Active" }
+            : user
+        )
+      );
+      showToast(`User ${targetUser.name} status updated to ${newStatus}.`);
+      fetchUsers();
+    } catch (e) {
+      showToast(e.message || "Failed to update user status.");
+    }
   };
 
-  // Filter application
+  // View user details
+  const handleViewUserDetail = async (user) => {
+    setSelectedUserModal(user);
+    if (user.id && user.id.includes("-") && user.id.length > 20) {
+      setIsLoadingDetail(true);
+      try {
+        const detail = await adminService.getUserDetail(user.id);
+        setSelectedUserModal((prev) => ({
+          ...prev,
+          ...detail,
+          total_bookings: detail.total_bookings,
+          average_rating: detail.average_rating,
+          verification_level: detail.verification_level,
+          verification_status: detail.verification_status,
+          base_location: detail.base_location,
+        }));
+      } catch (err) {
+        console.warn("Could not fetch user details from API:", err);
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    }
+  };
+
+  // Local search filter
   const filteredUsers = users.filter((user) => {
-    if (roleFilter !== "All" && user.role !== roleFilter) return false;
-    if (statusFilter !== "All Status" && user.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
@@ -72,13 +163,24 @@ export default function UserManagement() {
       )}
 
       {/* Header matching Screenshot 1 */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-          User Management
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Manage roles, verify status, and handle administrative actions for all Nirbhor members.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            User Management
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Manage roles, verify status, and handle administrative actions for all Nirbhor members.
+          </p>
+        </div>
+
+        <button
+          onClick={fetchUsers}
+          disabled={isLoading}
+          className="inline-flex items-center gap-2 px-3.5 py-2 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#146356] shadow-2xs transition cursor-pointer self-start sm:self-auto disabled:opacity-50"
+        >
+          <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
+        </button>
       </div>
 
       {/* Filters Bar matching Screenshot 1 */}
@@ -161,7 +263,20 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {filteredUsers.map((user) => {
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 text-[#146356] flex items-center justify-center mb-2">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                      <p className="font-semibold text-gray-800 text-sm">No users found</p>
+                      <p className="text-xs text-gray-400 mt-0.5">No registered user profiles matched your current filters.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((user) => {
                 const isActive = user.status === "Active";
 
                 return (
@@ -225,7 +340,7 @@ export default function UserManagement() {
                       <div className="flex items-center justify-center gap-3">
                         {/* Eye details button */}
                         <button
-                          onClick={() => setSelectedUserModal(user)}
+                          onClick={() => handleViewUserDetail(user)}
                           className="p-1 text-gray-400 hover:text-gray-700 transition cursor-pointer"
                           title="View User Details"
                           aria-label={`View details for ${user.name}`}
@@ -252,67 +367,59 @@ export default function UserManagement() {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination matching Screenshot 1 */}
+        {/* Pagination */}
         <div className="py-3.5 px-6 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500">
           <div>
-            Showing {filteredUsers.length} of 1,240 users
+            Showing {filteredUsers.length} of {totalCount} users
           </div>
 
           <div className="flex items-center gap-1 font-medium">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isLoading}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
-                currentPage === 1
-                  ? "bg-[#146356] text-white font-bold"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage(2)}
-              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
-                currentPage === 2
-                  ? "bg-[#146356] text-white font-bold"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              2
-            </button>
-            <button
-              onClick={() => setCurrentPage(3)}
-              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
-                currentPage === 3
-                  ? "bg-[#146356] text-white font-bold"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              3
-            </button>
-            <span className="px-1 text-gray-400">...</span>
-            <button
-              onClick={() => setCurrentPage(42)}
-              className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-gray-100 text-gray-700 cursor-pointer"
-            >
-              42
-            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
+                  currentPage === pageNum
+                    ? "bg-[#146356] text-white font-bold"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            {totalPages > 5 && (
+              <>
+                <span className="px-1 text-gray-400">...</span>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
+                    currentPage === totalPages
+                      ? "bg-[#146356] text-white font-bold"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
 
             <button
-              onClick={() => setCurrentPage((p) => Math.min(42, p + 1))}
-              disabled={currentPage === 42}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || isLoading}
               className="p-1.5 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-30 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
@@ -374,6 +481,24 @@ export default function UserManagement() {
                     {selectedUserModal.status}
                   </span>
                 </div>
+                {selectedUserModal.total_bookings !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Total Bookings:</span>
+                    <span className="font-semibold text-gray-900">{selectedUserModal.total_bookings}</span>
+                  </div>
+                )}
+                {selectedUserModal.average_rating !== undefined && selectedUserModal.average_rating !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Average Rating:</span>
+                    <span className="font-semibold text-amber-600">★ {selectedUserModal.average_rating}</span>
+                  </div>
+                )}
+                {selectedUserModal.verification_status && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Verification:</span>
+                    <span className="font-semibold uppercase text-emerald-800">{selectedUserModal.verification_status}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Registration Date:</span>
                   <span className="font-semibold text-gray-900">{selectedUserModal.joinedDate}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import LoginScreen from "@/components/screens/LoginScreen";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import DashboardOverview from "@/components/screens/DashboardOverview";
@@ -12,26 +12,24 @@ import AnalyticsScreen from "@/components/screens/AnalyticsScreen";
 import AdminManagement from "@/components/screens/AdminManagement";
 import AuditLogsScreen from "@/components/screens/AuditLogsScreen";
 import {
-  INITIAL_STATS,
-  INITIAL_VERIFICATIONS,
-  INITIAL_REPORTS,
-  INITIAL_ADMINS
-} from "@/data/mockData";
-import {
   Menu,
   Bell,
   Search,
   CheckCircle,
   ExternalLink,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  RotateCw,
 } from "lucide-react";
 import NirbhorLogo from "@/components/branding/NirbhorLogo";
+import { adminService } from "@/lib/adminService";
+import { getAccessToken, getCurrentUserData, clearAuthSession } from "@/lib/auth";
 
 export default function App() {
-  // Authentication state - Starts on Login Screen as requested
+  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Active view tab state: "dashboard", "verifications", "review_document", "reports", "users", "analytics"
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -39,13 +37,22 @@ export default function App() {
   // Mobile sidebar drawer state
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Application Data States
-  const [stats, setStats] = useState(INITIAL_STATS);
-  const [verifications, setVerifications] = useState(INITIAL_VERIFICATIONS);
-  const [reports, setReports] = useState(INITIAL_REPORTS);
-  const [admins, setAdmins] = useState(INITIAL_ADMINS);
-  const [selectedWorker, setSelectedWorker] = useState(INITIAL_VERIFICATIONS[0]);
+  // Application Data States (Purely loaded from Live API)
+  const [stats, setStats] = useState({
+    pendingVerifications: 0,
+    flaggedProfiles: 0,
+    totalProviders: "0",
+    totalBookings: "0",
+    totalUsers: "0",
+    totalSeekers: "0",
+    activeToday: 0,
+  });
+  const [verifications, setVerifications] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [selectedWorker, setSelectedWorker] = useState(null);
   const [toastNotification, setToastNotification] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const showToast = (message) => {
     setToastNotification(message);
@@ -53,6 +60,97 @@ export default function App() {
       setToastNotification(null);
     }, 3500);
   };
+
+  // Restore authenticated session on initial mount
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) {
+      const savedUser = getCurrentUserData();
+      if (savedUser) {
+        setCurrentUser({
+          name: savedUser.name || savedUser.name_en || "Administrator",
+          role: savedUser.role?.toUpperCase() || "ADMIN",
+          phone: savedUser.phone || "",
+          user_id: savedUser.user_id,
+        });
+        setIsAuthenticated(true);
+      }
+
+      // Verify token freshness with /users/me
+      adminService
+        .getCurrentUser()
+        .then((profile) => {
+          setCurrentUser({
+            name: profile.name || profile.name_en || "Administrator",
+            role: profile.role?.toUpperCase() || "ADMIN",
+            phone: profile.phone || "",
+            user_id: profile.user_id,
+          });
+          setIsAuthenticated(true);
+        })
+        .catch(() => {
+          // Token expired or invalid
+          clearAuthSession();
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        })
+        .finally(() => {
+          setIsInitializing(false);
+        });
+    } else {
+      setIsInitializing(false);
+    }
+  }, []);
+
+  // Centralized live data fetcher (always fresh, no cache, purely API)
+  const fetchDashboardData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsRefreshing(true);
+
+    try {
+      // 1. Dashboard summary counts
+      const dashPromise = adminService.getDashboard().catch(() => null);
+      // 2. Pending verifications
+      const verifPromise = adminService.getPendingVerifications(1, 20).catch(() => null);
+      // 3. Reports
+      const reportsPromise = adminService.getReports(null, 1, 20).catch(() => null);
+
+      const [dashData, verifData, reportsData] = await Promise.all([
+        dashPromise,
+        verifPromise,
+        reportsPromise,
+      ]);
+
+      if (dashData) {
+        setStats({
+          pendingVerifications: dashData.pending_verifications ?? 0,
+          flaggedProfiles: dashData.pending_reports ?? 0,
+          totalProviders: dashData.total_providers != null ? dashData.total_providers.toLocaleString() : "0",
+          totalBookings: dashData.total_bookings != null ? dashData.total_bookings.toLocaleString() : "0",
+          totalUsers: dashData.total_users != null ? dashData.total_users.toLocaleString() : "0",
+          totalSeekers: dashData.total_seekers != null ? dashData.total_seekers.toLocaleString() : "0",
+          activeToday: dashData.active_providers_today ?? 0,
+        });
+      }
+
+      if (verifData) {
+        setVerifications(Array.isArray(verifData.items) ? verifData.items : []);
+      }
+
+      if (reportsData) {
+        setReports(Array.isArray(reportsData.items) ? reportsData.items : []);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch fresh data when authenticated or activeTab changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, activeTab, fetchDashboardData]);
 
   // Login handler
   const handleLoginSuccess = (userData) => {
@@ -63,9 +161,11 @@ export default function App() {
   };
 
   // Logout handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await adminService.logout();
     setIsAuthenticated(false);
     setCurrentUser(null);
+    showToast("Signed out successfully.");
   };
 
   // Review worker document handler (navigates to Document Verification screen)
@@ -76,42 +176,72 @@ export default function App() {
   };
 
   // Approve worker
-  const handleApproveWorker = (workerId) => {
-    setVerifications((prev) =>
-      prev.map((item) =>
-        item.id === workerId ? { ...item, status: "APPROVED" } : item
-      )
-    );
-    setStats((prev) => ({
-      ...prev,
-      approvedToday: prev.approvedToday + 1,
-      pendingVerifications: Math.max(0, prev.pendingVerifications - 1)
-    }));
-    showToast("Provider credentials approved and verified successfully!");
-    setActiveTab("verifications");
+  const handleApproveWorker = async (workerId) => {
+    try {
+      if (typeof workerId === "string" && workerId.includes("-") && workerId.length > 20) {
+        await adminService.handleVerification(workerId, "approved");
+      }
+      setVerifications((prev) =>
+        prev.map((item) =>
+          (item.user_id || item.id) === workerId ? { ...item, status: "APPROVED", verification_status: "approved" } : item
+        )
+      );
+      setStats((prev) => ({
+        ...prev,
+        approvedToday: (prev.approvedToday || 0) + 1,
+        pendingVerifications: Math.max(0, (prev.pendingVerifications || 1) - 1)
+      }));
+      showToast("Provider credentials approved and verified successfully!");
+      fetchDashboardData();
+      setActiveTab("verifications");
+    } catch (e) {
+      showToast(e.message || "Failed to approve provider verification.");
+    }
   };
 
   // Reject worker
-  const handleRejectWorker = (workerId, reason) => {
-    setVerifications((prev) =>
-      prev.map((item) =>
-        item.id === workerId ? { ...item, status: "REJECTED", rejectionReason: reason } : item
-      )
-    );
-    setStats((prev) => ({
-      ...prev,
-      pendingVerifications: Math.max(0, prev.pendingVerifications - 1)
-    }));
-    showToast(`Application rejected. Reason recorded: "${reason}"`);
-    setActiveTab("verifications");
+  const handleRejectWorker = async (workerId, reason) => {
+    try {
+      if (typeof workerId === "string" && workerId.includes("-") && workerId.length > 20) {
+        await adminService.handleVerification(workerId, "rejected", reason);
+      }
+      setVerifications((prev) =>
+        prev.map((item) =>
+          (item.user_id || item.id) === workerId
+            ? { ...item, status: "REJECTED", verification_status: "rejected", rejectionReason: reason }
+            : item
+        )
+      );
+      setStats((prev) => ({
+        ...prev,
+        pendingVerifications: Math.max(0, (prev.pendingVerifications || 1) - 1)
+      }));
+      showToast(`Application rejected. Reason recorded: "${reason}"`);
+      fetchDashboardData();
+      setActiveTab("verifications");
+    } catch (e) {
+      showToast(e.message || "Failed to reject provider verification.");
+    }
   };
 
-  // 1. Initial State: If not logged in, render the Login Screen (Screenshot 1)
+  // 1. Initial State: While checking session
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-[#f4f7f5] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#16654e]/30 border-t-[#16654e] rounded-full animate-spin" />
+          <span className="text-xs font-semibold text-gray-500">Checking credentials...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Not logged in: render Login Screen
   if (!isAuthenticated) {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 2. Authenticated Admin Dashboard Layout
+  // 3. Authenticated Admin Dashboard Layout
   return (
     <div className="min-h-screen bg-[#f8faf9] flex flex-col antialiased">
       {/* Toast Notification */}
@@ -163,8 +293,18 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Header: Notification Icon Only */}
-          <div className="flex items-center">
+          {/* Right Header: Notification Icon & Live Sync */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchDashboardData}
+              disabled={isRefreshing}
+              className="p-2 text-gray-500 hover:text-[#16654e] hover:bg-emerald-50 rounded-xl transition cursor-pointer disabled:opacity-40"
+              title="Sync Live Data (No-Cache)"
+              aria-label="Sync Live Data"
+            >
+              <RotateCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-[#16654e]" : ""}`} />
+            </button>
+
             <button
               onClick={() => showToast("All system queues operating normally.")}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl relative transition cursor-pointer"
@@ -172,7 +312,7 @@ export default function App() {
               aria-label="Notifications"
             >
               <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full"></span>
             </button>
           </div>
         </header>
@@ -186,6 +326,8 @@ export default function App() {
               reports={reports}
               onReviewWorker={handleReviewWorker}
               onNavigateTab={(tab) => setActiveTab(tab)}
+              onRefresh={fetchDashboardData}
+              isLoading={isRefreshing}
             />
           )}
 
@@ -207,7 +349,12 @@ export default function App() {
           )}
 
           {activeTab === "reports" && (
-            <ReportsAndFlags reports={reports} setReports={setReports} />
+            <ReportsAndFlags
+              reports={reports}
+              setReports={setReports}
+              onRefresh={fetchDashboardData}
+              isLoading={isRefreshing}
+            />
           )}
 
           {activeTab === "users" && <UserManagement />}

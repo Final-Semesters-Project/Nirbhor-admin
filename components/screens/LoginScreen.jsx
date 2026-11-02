@@ -2,33 +2,42 @@
 
 import React, { useState } from "react";
 import NirbhorLogo from "../branding/NirbhorLogo";
-import { Eye, EyeOff, Lock, Mail, ArrowRight, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { adminService } from "@/lib/adminService";
 
 export default function LoginScreen({ onLoginSuccess }) {
-  const [email, setEmail] = useState("admin@nirbhor.com");
-  const [password, setPassword] = useState("admin123456");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please fill in both email and password.");
+    if (!username.trim() || !password.trim()) {
+      setError("Please fill in both phone/username and password.");
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await adminService.login(username, password);
       setIsLoading(false);
       onLoginSuccess({
-        name: "Admin Name",
-        role: "Super Admin",
-        email: email
+        name: response.user?.name || response.user?.name_en || "Administrator",
+        role: response.user?.role?.toUpperCase() || response.role?.toUpperCase() || "ADMIN",
+        user_id: response.user_id,
+        phone: response.user?.phone || username,
+        access_token: response.access_token,
       });
-    }, 450);
+    } catch (err) {
+      setIsLoading(false);
+      setError(
+        err.message || "Login failed. Please verify your credentials."
+      );
+    }
   };
 
   return (
@@ -54,7 +63,7 @@ export default function LoginScreen({ onLoginSuccess }) {
 
         {/* Card */}
         <div className="w-full bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100/80 p-8 sm:p-9 transition-all">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             {error && (
               <div className="bg-red-50 text-red-700 text-xs font-medium px-3.5 py-2.5 rounded-lg border border-red-200 flex items-center gap-2">
                 <span>⚠</span>
@@ -62,22 +71,26 @@ export default function LoginScreen({ onLoginSuccess }) {
               </div>
             )}
 
-            {/* Email Field */}
+            {/* Phone / Username Field */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="admin_account"
                 className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5"
               >
-                EMAIL
+                PHONE NUMBER / USERNAME
               </label>
               <div className="relative">
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@nirbhor.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition"
+                  id="admin_account"
+                  name="nirbhor_admin_account_id"
+                  type="text"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter phone number or username"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition"
                   required
                 />
               </div>
@@ -87,7 +100,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label
-                  htmlFor="password"
+                  htmlFor="admin_key"
                   className="text-[11px] font-bold uppercase tracking-wider text-gray-500"
                 >
                   PASSWORD
@@ -102,19 +115,21 @@ export default function LoginScreen({ onLoginSuccess }) {
               </div>
               <div className="relative">
                 <input
-                  id="password"
+                  id="admin_key"
+                  name="nirbhor_admin_secret_key"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-2.5 pr-11 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition"
+                  placeholder="Enter password"
+                  className="w-full px-4 py-2.5 pr-11 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -137,15 +152,6 @@ export default function LoginScreen({ onLoginSuccess }) {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Info Pill */}
-          <div className="mt-6 pt-5 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#16654e]" />
-              Secure 256-bit Admin Portal
-            </span>
-            <span className="text-gray-500 font-medium">v2.4.0</span>
-          </div>
         </div>
 
         {/* Security badge at bottom */}

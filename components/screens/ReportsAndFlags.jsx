@@ -13,45 +13,117 @@ import {
   FileSearch,
   CheckCircle,
   XCircle,
-  Slash
+  Slash,
 } from "lucide-react";
+import { adminService } from "@/lib/adminService";
 
-export default function ReportsAndFlags({ reports, setReports }) {
+export default function ReportsAndFlags({ reports, setReports, onRefresh, isLoading }) {
   const [activeFilter, setActiveFilter] = useState("all"); // "all", "high", "pending", "resolved"
   const [activeModalData, setActiveModalData] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleDismiss = (id) => {
-    setReports((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "RESOLVED" } : r))
-    );
-    showToast("Report marked as dismissed.");
-  };
-
-  const handleSuspend = (user) => {
-    if (confirm(`Are you sure you want to suspend account for ${user}?`)) {
+  const handleDismiss = async (id) => {
+    setIsProcessing(true);
+    try {
+      if (id && id.includes("-") && id.length > 20) {
+        await adminService.handleReport(id, "reviewed", "Dismissed by admin.");
+      }
       setReports((prev) =>
-        prev.map((r) =>
-          r.reportedUser === user ? { ...r, status: "RESOLVED", suspended: true } : r
-        )
+        prev.map((r) => ((r.report_id || r.id) === id ? { ...r, status: "reviewed" } : r))
       );
-      showToast(`Account for ${user} has been suspended.`);
+      showToast("Report marked as reviewed and dismissed.");
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      showToast(e.message || "Failed to dismiss report.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const filteredReports = reports.filter((item) => {
+  const handleSuspend = async (report) => {
+    const userName = report.reported_user_name || report.reportedUser || "User";
+    const reportId = report.report_id || report.id;
+    if (confirm(`Are you sure you want to suspend account for ${userName}?`)) {
+      setIsProcessing(true);
+      try {
+        if (reportId && reportId.includes("-") && reportId.length > 20) {
+          await adminService.handleReport(reportId, "action_taken", "Suspended by admin.");
+        }
+        setReports((prev) =>
+          prev.map((r) =>
+            (r.report_id || r.id) === reportId
+              ? { ...r, status: "action_taken", suspended: true }
+              : r
+          )
+        );
+        showToast(`Account for ${userName} has been suspended.`);
+        if (onRefresh) onRefresh();
+      } catch (e) {
+        showToast(e.message || "Failed to suspend user.");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  // Normalize reports from API or mock
+  const normalizedReports = (reports || []).map((r) => {
+    const id = r.report_id || r.id;
+    const reportedUser = r.reported_user_name || r.reportedUser || "Reported Member";
+    const userRole = (r.reported_user_role || r.userRole || "USER").toUpperCase();
+    const reason = r.reason || "Policy violation";
+    const description = r.description || `Report filed regarding issue: ${reason}`;
+    const reportedBy = r.reporter_name || r.reportedBy || "Platform Member";
+    const bookingId = r.booking_id || r.bookingId || "N/A";
+    const status = (r.status || "PENDING").toLowerCase();
+    const timeAgo = r.created_at
+      ? new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : r.timeAgo || "Recently";
+    const isHigh =
+      r.riskType === "high" ||
+      reason.toLowerCase().includes("fraud") ||
+      reason.toLowerCase().includes("danger") ||
+      reason.toLowerCase().includes("threat");
+    const riskType = isHigh ? "high" : "medium";
+    const avatar =
+      r.avatar ||
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+
+    return {
+      ...r,
+      id,
+      report_id: id,
+      reportedUser,
+      userRole,
+      reason,
+      description,
+      reportedBy,
+      bookingId,
+      status,
+      timeAgo,
+      riskType,
+      avatar,
+      suspended: status === "action_taken" || r.suspended,
+    };
+  });
+
+  const filteredReports = normalizedReports.filter((item) => {
     if (activeFilter === "high") return item.riskType === "high";
-    if (activeFilter === "pending") return item.status === "PENDING";
-    if (activeFilter === "resolved") return item.status === "RESOLVED";
+    if (activeFilter === "pending") return item.status === "pending";
+    if (activeFilter === "resolved")
+      return item.status === "reviewed" || item.status === "action_taken" || item.status === "resolved";
     return true;
   });
 
-  const highRiskCount = reports.filter((r) => r.riskType === "high" && r.status === "PENDING").length;
+  const highRiskCount = normalizedReports.filter(
+    (r) => r.riskType === "high" && r.status === "pending"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -75,11 +147,12 @@ export default function ReportsAndFlags({ reports, setReports }) {
         </div>
 
         <button
-          onClick={() => showToast("Reports synced with live safety feeds.")}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 shadow-xs transition cursor-pointer self-start sm:self-auto"
+          onClick={onRefresh || (() => showToast("Reports synced with live safety feeds."))}
+          disabled={isLoading || isProcessing}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 shadow-xs transition cursor-pointer self-start sm:self-auto disabled:opacity-50"
         >
-          <RotateCcw className="w-4 h-4 text-gray-600" />
-          <span>Refresh</span>
+          <RotateCcw className={`w-4 h-4 text-gray-600 ${isLoading ? "animate-spin" : ""}`} />
+          <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
         </button>
       </div>
 
@@ -93,7 +166,7 @@ export default function ReportsAndFlags({ reports, setReports }) {
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          All (14)
+          All ({normalizedReports.length})
         </button>
 
         <button
@@ -104,7 +177,7 @@ export default function ReportsAndFlags({ reports, setReports }) {
               : "text-gray-500 hover:text-gray-800"
           }`}
         >
-          High Risk (3)
+          High Risk ({highRiskCount})
         </button>
 
         <button
@@ -132,7 +205,18 @@ export default function ReportsAndFlags({ reports, setReports }) {
 
       {/* Reports Feed List */}
       <div className="space-y-4">
-        {filteredReports.map((report) => (
+        {filteredReports.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-12 text-center flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-800">No Reports Found</h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-sm">
+              There are currently no reported members or safety flags under this category.
+            </p>
+          </div>
+        ) : (
+          filteredReports.map((report) => (
           <div
             key={report.id}
             className={`bg-white rounded-2xl border p-6 shadow-xs transition-all relative ${
@@ -189,7 +273,7 @@ export default function ReportsAndFlags({ reports, setReports }) {
 
             {/* Quote / Description Box */}
             <div className="bg-[#fcfdfd] border border-gray-200/90 rounded-xl p-4 my-3 text-sm text-gray-700 italic font-normal leading-relaxed">
-              "{report.description}"
+              &quot;{report.description}&quot;
             </div>
 
             {/* Metadata Line */}
@@ -253,8 +337,9 @@ export default function ReportsAndFlags({ reports, setReports }) {
               {/* Suspend Account Button for severe violations */}
               {report.riskType === "high" && !report.suspended && (
                 <button
-                  onClick={() => handleSuspend(report.reportedUser)}
-                  className="px-4 py-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  onClick={() => handleSuspend(report)}
+                  disabled={isProcessing}
+                  className="px-4 py-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
                 >
                   <Slash className="w-3.5 h-3.5" />
                   <span>Suspend Account</span>
@@ -262,17 +347,18 @@ export default function ReportsAndFlags({ reports, setReports }) {
               )}
 
               {/* Dismiss Button */}
-              {report.status !== "RESOLVED" && (
+              {report.status !== "reviewed" && report.status !== "action_taken" && (
                 <button
-                  onClick={() => handleDismiss(report.id)}
-                  className="px-3.5 py-2 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition cursor-pointer"
+                  onClick={() => handleDismiss(report.id || report.report_id)}
+                  disabled={isProcessing}
+                  className="px-3.5 py-2 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition cursor-pointer disabled:opacity-50"
                 >
                   Dismiss
                 </button>
               )}
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Context Inspection Modal */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Plus,
@@ -16,9 +16,11 @@ import {
   Calendar,
   Phone,
   Mail,
-  Lock
+  Lock,
+  RotateCw,
 } from "lucide-react";
 import CreateAdminModal from "./CreateAdminModal";
+import { adminService } from "@/lib/adminService";
 
 export default function AdminManagement({
   admins,
@@ -30,29 +32,89 @@ export default function AdminManagement({
   const [selectedAdminModal, setSelectedAdminModal] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Fetch live admins list from API (no cache)
+  const fetchAdmins = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await adminService.getAdmins();
+      if (Array.isArray(data)) {
+        const mapped = data.map((adm) => {
+          const initials = (adm.name || "Admin")
+            .split(" ")
+            .map((n) => n[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+          return {
+            id: String(adm.user_id),
+            user_id: String(adm.user_id),
+            name: adm.name,
+            initials: initials || "AD",
+            phone: adm.phone,
+            status: adm.is_active ? "Active" : "Inactive",
+            createdDate: adm.created_at
+              ? new Date(adm.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric"
+                })
+              : "N/A",
+            lastActive: adm.last_active_at
+              ? new Date(adm.last_active_at).toLocaleDateString("en-GB", {
+                  month: "short",
+                  day: "numeric"
+                })
+              : "Never",
+            role: adm.role ? `${adm.role.charAt(0).toUpperCase() + adm.role.slice(1)} Admin` : "Admin",
+            email: `${adm.name.toLowerCase().replace(/\s+/g, ".")}@nirbhor.com`
+          };
+        });
+        setAdmins(mapped);
+      }
+    } catch (err) {
+      console.warn("Could not fetch admins from API, using local state:", err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setAdmins]);
+
+  useEffect(() => {
+    fetchAdmins();
+  }, [fetchAdmins]);
+
   // Toggle Suspend / Activate
-  const handleToggleStatus = (id) => {
+  const handleToggleStatus = async (id) => {
     const targetAdmin = admins.find((adm) => adm.id === id);
     if (!targetAdmin) return;
 
-    const nextStatus = targetAdmin.status === "Active" ? "Inactive" : "Active";
-    setAdmins((prev) =>
-      prev.map((adm) =>
-        adm.id === id ? { ...adm, status: nextStatus } : adm
-      )
-    );
-    showToast(`Admin ${targetAdmin.name} has been ${nextStatus === "Active" ? "activated" : "suspended"}.`);
+    try {
+      if (id.includes("-") && id.length > 20) {
+        await adminService.toggleAdminActive(id);
+      }
+      const nextStatus = targetAdmin.status === "Active" ? "Inactive" : "Active";
+      setAdmins((prev) =>
+        prev.map((adm) =>
+          adm.id === id ? { ...adm, status: nextStatus } : adm
+        )
+      );
+      showToast(`Admin ${targetAdmin.name} has been ${nextStatus === "Active" ? "activated" : "suspended"}.`);
+      fetchAdmins();
+    } catch (e) {
+      showToast(e.message || "Failed to update admin status.");
+    }
   };
 
   const handleAdminCreated = (newAdmin) => {
     setAdmins((prev) => [newAdmin, ...prev]);
     showToast(`Administrator ${newAdmin.name} created successfully.`);
+    fetchAdmins();
   };
 
   // Filter admins
@@ -96,13 +158,25 @@ export default function AdminManagement({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Admin</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={fetchAdmins}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#146356] shadow-2xs transition cursor-pointer disabled:opacity-50"
+            title="Refresh Live Data"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
+          </button>
+
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Admin</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Input & Total Count Bar */}

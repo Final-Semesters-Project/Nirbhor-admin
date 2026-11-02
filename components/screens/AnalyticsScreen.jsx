@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Download,
   Users,
@@ -12,14 +12,35 @@ import {
   TrendingUp,
   ShieldCheck,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  RotateCw,
 } from "lucide-react";
+import { adminService } from "@/lib/adminService";
 
 export default function AnalyticsScreen() {
   const [downloadToast, setDownloadToast] = useState(false);
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const weeklyData = [
+  const fetchAnalytics = async () => {
+    setIsLoading(true);
+    try {
+      const data = await adminService.getAnalytics();
+      setAnalyticsData(data);
+    } catch (err) {
+      console.warn("Could not fetch live analytics:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  // Compute weekly chart bars from bookings_per_week if available
+  const defaultWeeklyData = [
     { day: "Mon", bookings: 4600, height: 42 },
     { day: "Tue", bookings: 5400, height: 50 },
     { day: "Wed", bookings: 6800, height: 68 },
@@ -28,6 +49,39 @@ export default function AnalyticsScreen() {
     { day: "Sat", bookings: 9200, height: 95 },
     { day: "Sun", bookings: 5800, height: 55 }
   ];
+
+  let weeklyData = defaultWeeklyData;
+  if (analyticsData?.bookings_per_week && analyticsData.bookings_per_week.length > 0) {
+    const maxCount = Math.max(...analyticsData.bookings_per_week.map((b) => b.count), 1);
+    weeklyData = analyticsData.bookings_per_week.slice(-7).map((b) => {
+      const date = new Date(b.week_start);
+      const dayLabel = date.toLocaleDateString("en-US", { weekday: "short" });
+      const heightPercent = Math.min(100, Math.max(15, Math.round((b.count / maxCount) * 100)));
+      return {
+        day: dayLabel,
+        bookings: b.count,
+        height: heightPercent
+      };
+    });
+  }
+
+  const totalUsersDisplay = analyticsData?.total_users != null
+    ? analyticsData.total_users.toLocaleString()
+    : "0";
+  const totalBookingsDisplay = analyticsData?.total_bookings != null
+    ? analyticsData.total_bookings.toLocaleString()
+    : "0";
+  const avgRatingDisplay = analyticsData?.average_provider_rating != null
+    ? analyticsData.average_provider_rating.toFixed(1)
+    : "0.0";
+  const activeProvidersDisplay = analyticsData?.active_providers_count != null
+    ? analyticsData.active_providers_count.toLocaleString()
+    : "0";
+  const seekerCount = analyticsData?.seeker_count ?? 0;
+  const providerCount = analyticsData?.provider_count ?? 0;
+  const ratioDisplay = analyticsData?.seeker_to_provider_ratio != null
+    ? `${analyticsData.seeker_to_provider_ratio.toFixed(2)} : 1`
+    : "0 : 1";
 
   const handleDownloadCSV = () => {
     setDownloadToast(true);
@@ -51,17 +105,29 @@ export default function AnalyticsScreen() {
             Platform Analytics
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Real-time ecosystem health monitoring.
+            Real-time ecosystem health and platform volume metrics.
           </p>
         </div>
 
-        <button
-          onClick={handleDownloadCSV}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4 text-white" />
-          <span>Download CSV Report</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={fetchAnalytics}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-3.5 py-2 border border-emerald-200 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 text-xs font-semibold text-[#146356] shadow-2xs transition cursor-pointer disabled:opacity-50"
+            title="Refresh Live Data"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
+          </button>
+
+          <button
+            onClick={handleDownloadCSV}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#146356] hover:bg-[#104e43] text-white rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer self-start sm:self-auto"
+          >
+            <Download className="w-4 h-4 text-white" />
+            <span>Download CSV Report</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 KPI Stat Cards matching Screenshot 2 */}
@@ -76,11 +142,11 @@ export default function AnalyticsScreen() {
               </span>
             </div>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60">
-              +12%
+              Live
             </span>
           </div>
           <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            15k
+            {totalUsersDisplay}
           </div>
           <p className="text-xs text-gray-400 mt-1">
             Total Registered Users
@@ -97,14 +163,14 @@ export default function AnalyticsScreen() {
               </span>
             </div>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/60">
-              +8%
+              Live
             </span>
           </div>
           <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            42k
+            {totalBookingsDisplay}
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Total Bookings Completed
+            Total Platform Bookings
           </p>
         </div>
 
@@ -118,14 +184,14 @@ export default function AnalyticsScreen() {
               </span>
             </div>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-              Stable
+              Verified
             </span>
           </div>
           <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            4.7
+            {avgRatingDisplay}
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Average User Rating
+            Average Provider Rating
           </p>
         </div>
 
@@ -139,11 +205,11 @@ export default function AnalyticsScreen() {
               </span>
             </div>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-[#146356] border border-emerald-200/60">
-              +24
+              Active
             </span>
           </div>
           <div className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            800
+            {activeProvidersDisplay}
           </div>
           <p className="text-xs text-gray-400 mt-1">
             Active Service Providers
@@ -232,11 +298,11 @@ export default function AnalyticsScreen() {
             <div className="my-8 flex flex-col items-center justify-center relative">
               {/* Outer square frame card */}
               <div className="relative w-40 h-40 rounded-2xl border-4 border-gray-200 flex flex-col items-center justify-center bg-gray-50/50">
-                <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  18:1
+                <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                  {ratioDisplay}
                 </span>
                 <span className="text-[11px] font-bold text-gray-400 mt-0.5">
-                  Market Gap
+                  Market Ratio
                 </span>
 
                 {/* Overlapping inverted teal chevron marker matching Screenshot 2 */}
@@ -262,18 +328,26 @@ export default function AnalyticsScreen() {
           <div className="pt-4 border-t border-gray-100 space-y-1.5 text-xs font-semibold">
             <div className="flex items-center justify-between text-gray-700">
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#146356]" />
-                <span>Seekers</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#146356]"></span>
+                <span>Seekers ({seekerCount.toLocaleString()})</span>
               </span>
-              <span className="font-bold text-gray-900">94.5%</span>
+              <span className="font-bold text-gray-900">
+                {seekerCount + providerCount > 0
+                  ? `${(((seekerCount) / (seekerCount + providerCount)) * 100).toFixed(1)}%`
+                  : "65.6%"}
+              </span>
             </div>
 
             <div className="flex items-center justify-between text-gray-500">
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                <span>Providers</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-gray-300"></span>
+                <span>Providers ({providerCount.toLocaleString()})</span>
               </span>
-              <span className="font-bold text-gray-700">5.5%</span>
+              <span className="font-bold text-gray-700">
+                {seekerCount + providerCount > 0
+                  ? `${(((providerCount) / (seekerCount + providerCount)) * 100).toFixed(1)}%`
+                  : "34.4%"}
+              </span>
             </div>
           </div>
         </div>
@@ -291,7 +365,7 @@ export default function AnalyticsScreen() {
               Market Growth Insight
             </span>
             <p className="text-base sm:text-lg font-medium text-white/95 leading-relaxed">
-              "Demand for home-cleaning services rose by 40% this quarter in Dhaka North."
+              &quot;Demand for home-cleaning services rose by 40% this quarter in Dhaka North.&quot;
             </p>
           </div>
 

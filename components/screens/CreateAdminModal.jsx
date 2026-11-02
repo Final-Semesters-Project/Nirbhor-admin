@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Check
 } from "lucide-react";
+import { adminService } from "@/lib/adminService";
 
 export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
   const [fullName, setFullName] = useState("");
@@ -22,6 +23,7 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   if (!isOpen) return null;
 
@@ -48,9 +50,10 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setPasswordError("");
+    setApiError("");
 
     if (!fullName.trim()) {
       alert("Please enter full name.");
@@ -73,8 +76,14 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const created = await adminService.createAdmin({
+        phone: phoneNumber.replace(/[\s-]/g, ""),
+        password,
+        name_en: fullName,
+        name_bn: fullName,
+      });
+
       const initials = fullName
         .split(" ")
         .map((n) => n[0])
@@ -83,10 +92,11 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
         .toUpperCase();
 
       const newAdmin = {
-        id: `ADM-0${Math.floor(10 + Math.random() * 90)}`,
+        id: String(created?.user_id || `ADM-0${Math.floor(10 + Math.random() * 90)}`),
+        user_id: String(created?.user_id || ""),
         name: fullName,
         initials: initials || "AD",
-        phone: `+880 ${phoneNumber.slice(1, 5)}-${phoneNumber.slice(5)}`,
+        phone: phoneNumber,
         status: "Active",
         createdDate: new Date().toLocaleDateString("en-GB", {
           day: "2-digit",
@@ -100,7 +110,11 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
 
       onAdminCreated(newAdmin);
       onClose();
-    }, 400);
+    } catch (err) {
+      setApiError(err.message || "Failed to create administrator account.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -135,6 +149,12 @@ export default function CreateAdminModal({ isOpen, onClose, onAdminCreated }) {
 
         {/* Form Form Fields matching Screenshot 2 */}
         <form onSubmit={handleSubmit} className="py-4 space-y-4">
+          {apiError && (
+            <div className="bg-red-50 text-red-700 text-xs font-medium px-3.5 py-2.5 rounded-lg border border-red-200 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{apiError}</span>
+            </div>
+          )}
           {/* Full Name */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1.5">

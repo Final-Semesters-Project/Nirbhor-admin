@@ -37,24 +37,30 @@ export default function DocumentVerificationDetail({
     nidNumber: "19942691500000843"
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      await onApprove(applicant.user_id || applicant.id);
+    } catch (e) {
+      console.error("Approval error:", e);
+    } finally {
       setIsProcessing(false);
-      onApprove(applicant.id);
-    }, 400);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       alert("Please provide a rejection reason before rejecting the application.");
       return;
     }
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      await onReject(applicant.user_id || applicant.id, rejectionReason);
+    } catch (e) {
+      console.error("Rejection error:", e);
+    } finally {
       setIsProcessing(false);
-      onReject(applicant.id, rejectionReason);
-    }, 400);
+    }
   };
 
   return (
@@ -199,69 +205,79 @@ export default function DocumentVerificationDetail({
               </button>
             </div>
 
-            {/* Restricted Access Mock Document Presentation as in Screenshot 4 */}
-            <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 border border-gray-200 p-6 flex flex-col items-center justify-center min-h-[220px]">
-              {/* Document Mockup Canvas */}
-              <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-300 p-4 relative overflow-hidden">
-                {/* Government Card Banner */}
-                <div className="flex items-center justify-between border-b pb-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#16654e] flex items-center justify-center text-white text-[9px] font-bold">
-                      NB
+            {/* NID Document Front */}
+            {applicant.nid_url_front ? (
+              <div className="relative rounded-xl overflow-hidden border border-gray-200 min-h-[220px] bg-gray-50 flex items-center justify-center p-3">
+                <img
+                  src={applicant.nid_url_front}
+                  alt="NID Front"
+                  className="max-h-[260px] w-full object-contain rounded-lg shadow-sm"
+                />
+              </div>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 border border-gray-200 p-6 flex flex-col items-center justify-center min-h-[220px]">
+                {/* Document Mockup Canvas */}
+                <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-300 p-4 relative overflow-hidden">
+                  {/* Government Card Banner */}
+                  <div className="flex items-center justify-between border-b pb-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-[#16654e] flex items-center justify-center text-white text-[9px] font-bold">
+                        NB
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-gray-800 uppercase tracking-tight">
+                          Government National Identity Card
+                        </div>
+                        <div className="text-[8px] text-gray-500">
+                          Government of the People&apos;s Republic
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-gray-800 uppercase tracking-tight">
-                        Government National Identity Card
-                      </div>
-                      <div className="text-[8px] text-gray-500">
-                        Government of the People's Republic
-                      </div>
+                    <div className="w-4 h-4 border border-emerald-600 rounded-sm bg-emerald-50 text-[7px] flex items-center justify-center text-emerald-800 font-bold">
+                      ID
                     </div>
                   </div>
-                  <div className="w-4 h-4 border border-emerald-600 rounded-sm bg-emerald-50 text-[7px] flex items-center justify-center text-emerald-800 font-bold">
-                    ID
-                  </div>
-                </div>
 
-                {/* Identity rows blurred / confidential view */}
-                <div className="flex gap-4 items-center">
-                  <div className="w-16 h-20 rounded-md bg-gray-200 border border-gray-300 overflow-hidden relative shrink-0">
-                    <img
-                      src={applicant.selfieImage}
-                      alt="ID Photo"
-                      className="w-full h-full object-cover filter blur-[0.8px]"
-                    />
+                  {/* Identity rows blurred / confidential view */}
+                  <div className="flex gap-4 items-center">
+                    <div className="w-16 h-20 rounded-md bg-gray-200 border border-gray-300 overflow-hidden relative shrink-0">
+                      <img
+                        src={applicant.selfieImage}
+                        alt="ID Photo"
+                        className="w-full h-full object-cover filter blur-[0.8px]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="h-3 bg-gray-200 rounded w-4/5" />
+                      <div className="h-2.5 bg-gray-100 rounded w-2/3" />
+                      <div className="h-2.5 bg-gray-100 rounded w-1/2" />
+                      <div className="h-3 bg-gray-300/80 rounded w-3/4 mt-2" />
+                    </div>
                   </div>
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <div className="h-3 bg-gray-200 rounded w-4/5" />
-                    <div className="h-2.5 bg-gray-100 rounded w-2/3" />
-                    <div className="h-2.5 bg-gray-100 rounded w-1/2" />
-                    <div className="h-3 bg-gray-300/80 rounded w-3/4 mt-2" />
+
+                  {/* Chip & Watermark */}
+                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[9px] text-gray-400 font-mono">
+                    <span>NID: 19942691500000843</span>
+                    <span className="font-sans font-semibold text-emerald-800">SMART CHIP</span>
                   </div>
-                </div>
 
-                {/* Chip & Watermark */}
-                <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[9px] text-gray-400 font-mono">
-                  <span>NID: 19942691500000843</span>
-                  <span className="font-sans font-semibold text-emerald-800">SMART CHIP</span>
-                </div>
-
-                {/* Restricted Access Overlay Pill */}
-                <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center">
-                  <div className="bg-white/95 rounded-xl shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2.5">
-                    <Lock className="w-4 h-4 text-[#16654e]" />
-                    <div className="text-left">
-                      <div className="text-xs font-bold text-gray-900 leading-tight">
-                        Confidential Document
-                      </div>
-                      <div className="text-[10px] text-gray-500">
-                        NID Card Front View - Restricted Access
+                  {/* Restricted Access Overlay Pill */}
+                  <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center">
+                    <div className="bg-white/95 rounded-xl shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2.5">
+                      <Lock className="w-4 h-4 text-[#16654e]" />
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-gray-900 leading-tight">
+                          Confidential Document
+                        </div>
+                        <div className="text-[10px] text-gray-500">
+                          NID Card Front View - Restricted Access
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* NID BACK Card */}
@@ -279,44 +295,54 @@ export default function DocumentVerificationDetail({
               </button>
             </div>
 
-            <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 border border-gray-200 p-6 flex flex-col items-center justify-center min-h-[220px]">
-              {/* Document Mockup Canvas Back */}
-              <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-300 p-4 relative overflow-hidden">
-                <div className="space-y-2 mb-3">
-                  <div className="text-[10px] text-gray-600 font-semibold">
-                    Address / Permanent Residence Verification
+            {applicant.nid_url_back ? (
+              <div className="relative rounded-xl overflow-hidden border border-gray-200 min-h-[220px] bg-gray-50 flex items-center justify-center p-3">
+                <img
+                  src={applicant.nid_url_back}
+                  alt="NID Back"
+                  className="max-h-[260px] w-full object-contain rounded-lg shadow-sm"
+                />
+              </div>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200 border border-gray-200 p-6 flex flex-col items-center justify-center min-h-[220px]">
+                {/* Document Mockup Canvas Back */}
+                <div className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-300 p-4 relative overflow-hidden">
+                  <div className="space-y-2 mb-3">
+                    <div className="text-[10px] text-gray-600 font-semibold">
+                      Address / Permanent Residence Verification
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded w-full" />
+                    <div className="h-2 bg-gray-200 rounded w-5/6" />
+                    <div className="h-2 bg-gray-200 rounded w-4/6" />
                   </div>
-                  <div className="h-2 bg-gray-200 rounded w-full" />
-                  <div className="h-2 bg-gray-200 rounded w-5/6" />
-                  <div className="h-2 bg-gray-200 rounded w-4/6" />
-                </div>
 
-                {/* Simulated Barcode */}
-                <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
-                  <div className="h-7 w-48 bg-repeat-x flex items-center gap-[2px]">
-                    {[4, 2, 6, 1, 3, 5, 2, 4, 1, 6, 3, 2, 5, 1, 4, 2, 6, 3, 5, 2].map((w, i) => (
-                      <span key={i} className="h-full bg-gray-800" style={{ width: `${w}px` }} />
-                    ))}
+                  {/* Simulated Barcode */}
+                  <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
+                    <div className="h-7 w-48 bg-repeat-x flex items-center gap-[2px]">
+                      {[4, 2, 6, 1, 3, 5, 2, 4, 1, 6, 3, 2, 5, 1, 4, 2, 6, 3, 5, 2].map((w, i) => (
+                        <span key={i} className="h-full bg-gray-800" style={{ width: `${w}px` }} />
+                      ))}
+                    </div>
+                    <span className="text-[9px] font-mono text-gray-400">V.2024-BD</span>
                   </div>
-                  <span className="text-[9px] font-mono text-gray-400">V.2024-BD</span>
-                </div>
 
-                {/* Restricted Access Overlay Pill */}
-                <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center">
-                  <div className="bg-white/95 rounded-xl shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2.5">
-                    <Lock className="w-4 h-4 text-[#16654e]" />
-                    <div className="text-left">
-                      <div className="text-xs font-bold text-gray-900 leading-tight">
-                        Confidential Document
-                      </div>
-                      <div className="text-[10px] text-gray-500">
-                        NID Card Back View - Restricted Access
+                  {/* Restricted Access Overlay Pill */}
+                  <div className="absolute inset-0 bg-slate-900/15 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center">
+                    <div className="bg-white/95 rounded-xl shadow-lg border border-gray-200 px-4 py-2.5 flex items-center gap-2.5">
+                      <Lock className="w-4 h-4 text-[#16654e]" />
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-gray-900 leading-tight">
+                          Confidential Document
+                        </div>
+                        <div className="text-[10px] text-gray-500">
+                          NID Card Back View - Restricted Access
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -390,7 +416,13 @@ export default function DocumentVerificationDetail({
             </div>
             <div className="p-4 flex flex-col items-center justify-center bg-gray-50 rounded-xl my-4">
               <img
-                src={applicant.selfieImage}
+                src={
+                  selectedImageModal === "nid-front"
+                    ? (applicant.nid_url_front || applicant.selfieImage)
+                    : selectedImageModal === "nid-back"
+                    ? (applicant.nid_url_back || applicant.selfieImage)
+                    : applicant.selfieImage
+                }
                 alt="Document Preview"
                 className="max-h-[420px] rounded-lg object-contain shadow"
               />
