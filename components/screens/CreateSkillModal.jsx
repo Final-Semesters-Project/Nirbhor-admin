@@ -12,6 +12,8 @@ export default function CreateSkillModal({
   onSkillCreated,
   isSuperAdmin,
 }) {
+  const [availableCategories, setAvailableCategories] = useState(categories);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [categoryId, setCategoryId] = useState(initialCategoryId || "");
   const [nameEn, setNameEn] = useState("");
   const [nameBn, setNameBn] = useState("");
@@ -19,12 +21,27 @@ export default function CreateSkillModal({
   const [apiError, setApiError] = useState("");
 
   useEffect(() => {
-    if (initialCategoryId) {
-      setCategoryId(String(initialCategoryId));
-    } else if (categories.length > 0 && !categoryId) {
-      setCategoryId(String(categories[0].id));
+    if (categories && categories.length > 0) {
+      setAvailableCategories(categories);
+      if (!categoryId) {
+        setCategoryId(String(initialCategoryId || categories[0].id));
+      }
+    } else if (isOpen) {
+      setIsLoadingCategories(true);
+      adminService
+        .getCategories()
+        .then((cats) => {
+          if (Array.isArray(cats)) {
+            setAvailableCategories(cats);
+            if (!categoryId && cats.length > 0) {
+              setCategoryId(String(initialCategoryId || cats[0].id));
+            }
+          }
+        })
+        .catch((e) => console.warn("Could not fetch categories in CreateSkillModal:", e))
+        .finally(() => setIsLoadingCategories(false));
     }
-  }, [initialCategoryId, categories, categoryId]);
+  }, [categories, isOpen, initialCategoryId, categoryId]);
 
   if (!isOpen) return null;
 
@@ -61,15 +78,7 @@ export default function CreateSkillModal({
       onClose();
     } catch (err) {
       setIsSubmitting(false);
-      let msg = err.message || "Failed to create skill. Please try again.";
-      if (
-        msg.toLowerCase().includes("admins only") ||
-        msg.includes("403") ||
-        msg.toLowerCase().includes("forbidden")
-      ) {
-        msg =
-          "Permission Denied: Under backend security policy (skill_router.py), skill creation is reserved for regular 'admin' accounts. Super Admin accounts have oversight access.";
-      }
+      const msg = err.message || "Failed to create skill. Please check details and try again.";
       setApiError(msg);
     }
   };
@@ -84,9 +93,14 @@ export default function CreateSkillModal({
               <Wrench className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 leading-tight">
-                Add New Skill
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-gray-900 leading-tight">
+                  Add New Skill
+                </h2>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-[#146356] border border-emerald-300">
+                  {isSuperAdmin ? "Super Admin" : "Admin"}
+                </span>
+              </div>
               <p className="text-[11px] text-gray-500 font-medium">
                 POST /api/v1/skill/create
               </p>
@@ -117,18 +131,27 @@ export default function CreateSkillModal({
             </label>
             <select
               required
+              disabled={isLoadingCategories}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition cursor-pointer font-medium"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#16654e] focus:border-transparent transition cursor-pointer font-medium disabled:opacity-50"
             >
-              <option value="" disabled>
-                -- Select a Category --
-              </option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name || cat.name_en} (ID: {cat.id})
-                </option>
-              ))}
+              {isLoadingCategories ? (
+                <option value="">Loading categories...</option>
+              ) : availableCategories.length === 0 ? (
+                <option value="">No categories available</option>
+              ) : (
+                <>
+                  <option value="" disabled>
+                    -- Select a Category --
+                  </option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name || cat.name_en} (ID: {cat.id})
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
             <p className="text-[11px] text-gray-400 mt-1">
               The category under which this skill will be grouped.

@@ -83,7 +83,7 @@ export default function CategoryManagement({ onNavigateToSkills, currentUser, is
           </p>
         </div>
 
-        {/* Action Bar (Add Category shown only for regular Admin, hidden for Super Admin) */}
+        {/* Action Bar (Add Category available to both Admin and Super Admin) */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
@@ -95,16 +95,14 @@ export default function CategoryManagement({ onNavigateToSkills, currentUser, is
             <RotateCw className={`w-4 h-4 ${isLoading ? "animate-spin text-[#16654e]" : ""}`} />
           </button>
 
-          {!isSuperAdmin && (
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16654e] text-white text-xs font-bold shadow-md shadow-[#16654e]/20 hover:bg-[#125743] hover:shadow-lg transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Category</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16654e] text-white text-xs font-bold shadow-md shadow-[#16654e]/20 hover:bg-[#125743] hover:shadow-lg transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Category</span>
+          </button>
         </div>
       </div>
 

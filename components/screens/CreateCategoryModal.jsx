@@ -40,15 +40,7 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
       onClose();
     } catch (err) {
       setIsSubmitting(false);
-      let msg = err.message || "Failed to create category. Please try again.";
-      if (
-        msg.toLowerCase().includes("admins only") ||
-        msg.includes("403") ||
-        msg.toLowerCase().includes("forbidden")
-      ) {
-        msg =
-          "Permission Denied: Under backend security policy (categories_router.py), category creation is reserved for regular 'admin' accounts. Super Admin accounts have oversight access.";
-      }
+      const msg = err.message || "Failed to create category. Please check details and try again.";
       setApiError(msg);
     }
   };
@@ -63,9 +55,14 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
               <FolderPlus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 leading-tight">
-                Add New Category
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-gray-900 leading-tight">
+                  Add New Category
+                </h2>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-[#146356] border border-emerald-300">
+                  {isSuperAdmin ? "Super Admin" : "Admin"}
+                </span>
+              </div>
               <p className="text-[11px] text-gray-500 font-medium">
                 POST /api/v1/category/create
               </p>
