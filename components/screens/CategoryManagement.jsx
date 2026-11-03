@@ -152,32 +152,29 @@ export default function CategoryManagement({ onNavigateToSkills, currentUser, is
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                    <Hash className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 border border-gray-200/60">
+                    <Hash className="w-3 h-3 text-gray-500" />
                     <span>ID: {cat.id}</span>
                   </span>
 
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" title="Active" />
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#16654e] flex items-center justify-center font-bold group-hover:bg-[#16654e] group-hover:text-white transition-colors shadow-2xs">
+                    <FolderTree className="w-4 h-4" />
+                  </div>
                 </div>
 
-                <h3 className="text-base font-bold text-gray-900 group-hover:text-[#16654e] transition-colors">
+                <h3 className="text-base font-bold text-gray-900 group-hover:text-[#16654e] transition-colors leading-snug">
                   {cat.name}
                 </h3>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[11px] font-medium text-gray-400 flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Bilingual Active</span>
-                </span>
-
+              <div className="mt-5 pt-3.5 border-t border-gray-100 flex items-center justify-start">
                 <button
                   type="button"
                   onClick={() => onNavigateToSkills && onNavigateToSkills(cat.id)}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#16654e] hover:text-[#114b39] transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16654e] hover:text-[#114b39] transition cursor-pointer group/btn"
                 >
                   <span>View Skills</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-1" />
                 </button>
               </div>
             </div>

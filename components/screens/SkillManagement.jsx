@@ -13,6 +13,9 @@ import {
   Hash,
   Globe,
   Layers,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import CreateSkillModal from "./CreateSkillModal";
 import { adminService } from "@/lib/adminService";
@@ -24,11 +27,44 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
   const [selectedCategory, setSelectedCategory] = useState(initialCategoryFilter || "all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", category_id: "" });
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleStartEdit = (skill) => {
+    setEditingSkill(skill);
+    setEditForm({
+      name: skill.name || "",
+      category_id: skill.category_id || "",
+    });
+  };
+
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    if (!editForm.name.trim()) {
+      showToast("Skill name cannot be empty.");
+      return;
+    }
+    const cat = categories.find((c) => String(c.id) === String(editForm.category_id));
+    setSkills((prev) =>
+      prev.map((s) =>
+        s.id === editingSkill.id
+          ? {
+              ...s,
+              name: editForm.name.trim(),
+              category_id: editForm.category_id,
+              category_name: cat ? cat.name : s.category_name,
+            }
+          : s
+      )
+    );
+    showToast(`Skill "${editForm.name.trim()}" updated successfully!`);
+    setEditingSkill(null);
   };
 
   // Fetch categories and all skills across categories
@@ -203,7 +239,7 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
                   <th className="py-3.5 px-4">Skill ID</th>
                   <th className="py-3.5 px-4">Skill Name</th>
                   <th className="py-3.5 px-4">Assigned Category</th>
-                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700 font-medium">
@@ -228,11 +264,18 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
                         <span>{skill.category_name || `Category #${skill.category_id}`}</span>
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span>Active</span>
-                      </span>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(skill)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#16654e] bg-emerald-50 hover:bg-[#16654e] hover:text-white border border-emerald-200/90 transition-all cursor-pointer shadow-2xs"
+                          title="Update Skill"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Update</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -254,6 +297,81 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
           fetchData();
         }}
       />
+
+      {/* Update Skill Modal */}
+      {editingSkill && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#16654e] flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-base text-gray-900">
+                  Update Skill #{editingSkill.id}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSkill(null)}
+                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Skill Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Electrician, Plumbing"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#16654e]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Assigned Category
+                </label>
+                <select
+                  value={editForm.category_id}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, category_id: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#16654e]"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSkill(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#16654e] text-white text-xs font-bold shadow-md shadow-[#16654e]/20 hover:bg-[#125743] transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

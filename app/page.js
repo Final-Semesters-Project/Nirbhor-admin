@@ -302,21 +302,20 @@ export default function App() {
                 {activeTab === "review_document"
                   ? "Document Verification"
                   : activeTab === "admin_management"
-                  ? "Admin Management"
-                  : activeTab === "audit_logs"
-                  ? "Audit Logs"
-                  : activeTab === "categories"
-                  ? "Category Management"
-                  : activeTab === "skills"
-                  ? "Skill Management"
-                  : activeTab.replace("_", " ")}
+                    ? "Admin Management"
+                    : activeTab === "audit_logs"
+                      ? "Audit Logs"
+                      : activeTab === "categories"
+                        ? "Category Management"
+                        : activeTab === "skills"
+                          ? "Skill Management"
+                          : activeTab.replace("_", " ")}
               </span>
               <span
-                className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                  isSuperAdmin
+                className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${isSuperAdmin
                     ? "bg-emerald-100 text-[#146356] border border-emerald-300"
                     : "bg-emerald-50 text-[#16654e] border border-emerald-200"
-                }`}
+                  }`}
                 title={`Operating under ${isSuperAdmin ? "Super Admin" : "Admin"} role permissions`}
               >
                 {isSuperAdmin ? "Super Admin" : "Admin"}
@@ -324,28 +323,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Header: Notification Icon & Live Sync */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchDashboardData}
-              disabled={isRefreshing}
-              className="p-2 text-gray-500 hover:text-[#16654e] hover:bg-emerald-50 rounded-xl transition cursor-pointer disabled:opacity-40"
-              title="Sync Live Data (No-Cache)"
-              aria-label="Sync Live Data"
-            >
-              <RotateCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-[#16654e]" : ""}`} />
-            </button>
 
-            <button
-              onClick={() => showToast("All system queues operating normally.")}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl relative transition cursor-pointer"
-              title="Notifications"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full"></span>
-            </button>
-          </div>
         </header>
 
         {/* View Routing / Screen Rendering */}
