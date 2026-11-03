@@ -82,12 +82,6 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {isSuperAdmin && (
-            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs">
-              <span className="font-bold">Backend Policy:</span> Under current backend configuration (`categories_router.py`), category creation is permitted for regular <span className="font-semibold underline">Admin</span> accounts. Super Admin accounts oversee categories.
-            </div>
-          )}
-
           {apiError && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />

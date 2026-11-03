@@ -314,8 +314,8 @@ export default function App() {
               <span
                 className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                   isSuperAdmin
-                    ? "bg-purple-100 text-purple-800 border border-purple-200"
-                    : "bg-emerald-100 text-[#16654e] border border-emerald-200"
+                    ? "bg-emerald-100 text-[#146356] border border-emerald-300"
+                    : "bg-emerald-50 text-[#16654e] border border-emerald-200"
                 }`}
                 title={`Operating under ${isSuperAdmin ? "Super Admin" : "Admin"} role permissions`}
               >

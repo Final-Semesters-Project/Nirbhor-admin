@@ -52,14 +52,13 @@ export default function AdminSidebar({
       id: "verifications",
       label: "Verifications",
       icon: ShieldCheck,
-      badge: stats?.pendingVerifications || "12"
+      badge: null
     },
     {
       id: "reports",
       label: "Reports & Flags",
       icon: AlertTriangle,
-      badge: stats?.flaggedProfiles || "5",
-      badgeColor: "bg-red-500/90 text-white"
+      badge: null
     },
     {
       id: "users",

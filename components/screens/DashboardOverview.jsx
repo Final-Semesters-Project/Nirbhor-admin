@@ -173,29 +173,29 @@ export default function DashboardOverview({
 
       {/* Role-Specific Executive Welcome Banner */}
       {isSuperAdmin ? (
-        <div className="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md border border-purple-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-[#146356] via-[#11574b] to-[#0c4339] rounded-2xl p-5 text-white shadow-md border border-emerald-600/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 text-[10px] font-extrabold uppercase tracking-wider border border-purple-400/30">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 text-[10px] font-extrabold uppercase tracking-wider border border-white/20">
                 Super Administrator
               </span>
-              <span className="text-xs text-purple-200 font-medium">Welcome, {currentUser?.name || "Super Admin"}</span>
+              <span className="text-xs text-emerald-100/90 font-medium">Welcome, {currentUser?.name || "Super Admin"}</span>
             </div>
             <h2 className="text-lg font-bold mt-1 text-white">Platform Governance & Security Center</h2>
-            <p className="text-xs text-purple-200/90 mt-0.5 max-w-2xl">
+            <p className="text-xs text-emerald-100/80 mt-0.5 max-w-2xl">
               Oversee the administrative staff, audit system logs, and inspect platform verification and moderation pipelines.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onNavigateTab("admin_management")}
-              className="px-3.5 py-2 rounded-xl bg-white text-purple-950 font-bold text-xs hover:bg-purple-50 transition shadow-sm cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white text-[#146356] font-bold text-xs hover:bg-emerald-50 transition shadow-sm cursor-pointer"
             >
               Manage Admin Team
             </button>
             <button
               onClick={() => onNavigateTab("audit_logs")}
-              className="px-3.5 py-2 rounded-xl bg-purple-800/80 text-white font-bold text-xs hover:bg-purple-700 transition border border-purple-400/40 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white/20 text-white font-bold text-xs hover:bg-white/30 transition border border-white/20 cursor-pointer"
             >
               Audit Logs
             </button>

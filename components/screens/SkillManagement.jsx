@@ -13,7 +13,6 @@ import {
   Hash,
   Globe,
   Layers,
-  ShieldCheck,
 } from "lucide-react";
 import CreateSkillModal from "./CreateSkillModal";
 import { adminService } from "@/lib/adminService";
@@ -100,21 +99,6 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
         </div>
       )}
 
-      {/* Role-Based Notice for Super Admin */}
-      {isSuperAdmin && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-purple-900 text-xs">
-          <div className="w-8 h-8 rounded-xl bg-purple-200/80 text-purple-800 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-bold">Super Admin Oversight:</span>
-            <span className="ml-1 text-purple-800">
-              Skills are registered and linked to categories by operational Admins (`POST /api/v1/skill/create`). Super Admins oversee skills and category mappings across the platform.
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Screen Header & Top Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
         <div>
@@ -131,7 +115,7 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
           </p>
         </div>
 
-        {/* Add Skill Button (User request: "skill page er under a add skill button thakbe") */}
+        {/* Action Bar (Add Skill shown only for regular Admin, hidden for Super Admin) */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
@@ -143,14 +127,16 @@ export default function SkillManagement({ initialCategoryFilter = "all", current
             <RotateCw className={`w-4 h-4 ${isLoading ? "animate-spin text-[#16654e]" : ""}`} />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16654e] text-white text-xs font-bold shadow-md shadow-[#16654e]/20 hover:bg-[#125743] hover:shadow-lg transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Skill</span>
-          </button>
+          {!isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16654e] text-white text-xs font-bold shadow-md shadow-[#16654e]/20 hover:bg-[#125743] hover:shadow-lg transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Skill</span>
+            </button>
+          )}
         </div>
       </div>
 
