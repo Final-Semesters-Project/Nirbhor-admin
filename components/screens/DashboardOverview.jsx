@@ -6,14 +6,12 @@ import {
   Flag,
   Wrench,
   Calendar,
-  FileText,
   AlertTriangle,
   UserX,
   CreditCard,
   CheckCircle,
   ExternalLink,
   ChevronRight,
-  Download,
   RotateCw,
   RotateCcw,
   AlertCircle,
@@ -66,8 +64,6 @@ export default function DashboardOverview({
   onRefresh,
   isLoading
 }) {
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-
   // Purely dynamic Verification items from live API (no static mock data)
   const displayVerifications = Array.isArray(verifications)
     ? verifications.slice(0, 5).map((v) => {
@@ -160,14 +156,6 @@ export default function DashboardOverview({
               <span>{isLoading ? "Refreshing..." : "Refresh"}</span>
             </button>
           )}
-
-          <button
-            onClick={() => setReportModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 text-xs font-medium text-gray-700 shadow-2xs transition cursor-pointer self-start sm:self-auto"
-          >
-            <FileText className="w-4 h-4 text-[#16654e]" />
-            <span>Generate Report</span>
-          </button>
         </div>
       </div>
 
@@ -487,67 +475,6 @@ export default function DashboardOverview({
           </div>
         </div>
       </div>
-
-      {/* Generate Report Modal */}
-      {reportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#16654e]" />
-                <h3 className="font-bold text-base text-gray-900">
-                  Generate Administrative Report
-                </h3>
-              </div>
-              <button
-                onClick={() => setReportModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-lg p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="py-4 space-y-3 text-sm text-gray-600">
-              <p>
-                Select the parameters to compile an audit report for Nirbhor:
-              </p>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="accent-[#16654e] rounded" />
-                  <span>Verification Status & Level 1/2 Approvals</span>
-                </label>
-                <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="accent-[#16654e] rounded" />
-                  <span>Flagged Profiles & Trust Safety Moderation</span>
-                </label>
-                <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="accent-[#16654e] rounded" />
-                  <span>Geographic Provider Density & Bookings Summary</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
-              <button
-                onClick={() => setReportModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  alert("Report generated successfully as PDF/CSV for Nirbhor Trust Portal.");
-                  setReportModalOpen(false);
-                }}
-                className="px-4 py-2 text-xs font-semibold bg-[#16654e] hover:bg-[#114f3d] text-white rounded-xl shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Audit Report</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
