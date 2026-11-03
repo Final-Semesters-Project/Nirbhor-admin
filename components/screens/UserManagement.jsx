@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   ShieldCheck,
+  Shield,
   User,
   Phone,
   Calendar,
@@ -58,7 +59,7 @@ const formatTimeAgo = (dateStr) => {
   }
 };
 
-export default function UserManagement() {
+export default function UserManagement({ currentUser, isSuperAdmin }) {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -324,6 +325,7 @@ export default function UserManagement() {
               <option value="All">All Roles</option>
               <option value="Provider">Provider</option>
               <option value="Seeker">Seeker</option>
+              <option value="Admin">Admin</option>
             </select>
           </div>
 
@@ -464,22 +466,32 @@ export default function UserManagement() {
                             <Eye className="w-4 h-4" />
                           </button>
 
-                          {/* Toggle Switch */}
-                          <button
-                            type="button"
-                            onClick={() => handleToggleStatus(user.id)}
-                            disabled={isTogglingId === user.id}
-                            aria-label={`Toggle active state for ${user.name}`}
-                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              isActive ? "bg-[#16654e]" : "bg-gray-300"
-                            } ${isTogglingId === user.id ? "opacity-50 cursor-wait" : ""}`}
-                          >
+                          {/* Toggle Switch or Protected Badge for Super Admin */}
+                          {user.roleRaw === "super_admin" ? (
                             <span
-                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                                isActive ? "translate-x-4" : "translate-x-0"
-                              }`}
-                            />
-                          </button>
+                              title="Super Admin accounts are immutable and cannot be suspended"
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 select-none"
+                            >
+                              <Shield className="w-2.5 h-2.5 text-purple-600" />
+                              <span>Protected</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(user.id)}
+                              disabled={isTogglingId === user.id}
+                              aria-label={`Toggle active state for ${user.name}`}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                isActive ? "bg-[#16654e]" : "bg-gray-300"
+                              } ${isTogglingId === user.id ? "opacity-50 cursor-wait" : ""}`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                  isActive ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -626,12 +638,19 @@ export default function UserManagement() {
                   >
                     {selectedUserModal.is_active ? "Active Account" : "Suspended"}
                   </span>
-                  <button
-                    onClick={() => handleToggleStatus(selectedUserModal.id)}
-                    className="text-[11px] text-[#16654e] hover:underline font-semibold cursor-pointer"
-                  >
-                    {selectedUserModal.is_active ? "Suspend User" : "Activate User"}
-                  </button>
+                  {selectedUserModal.roleRaw === "super_admin" ? (
+                    <span className="text-[11px] text-purple-700 font-semibold flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-purple-600" />
+                      <span>Protected Account</span>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleToggleStatus(selectedUserModal.id)}
+                      className="text-[11px] text-[#16654e] hover:underline font-semibold cursor-pointer"
+                    >
+                      {selectedUserModal.is_active ? "Suspend User" : "Activate User"}
+                    </button>
+                  )}
                 </div>
               </div>
 

@@ -59,6 +59,8 @@ export default function DashboardOverview({
   stats,
   verifications,
   reports,
+  currentUser,
+  isSuperAdmin,
   onReviewWorker,
   onNavigateTab,
   onRefresh,
@@ -168,6 +170,73 @@ export default function DashboardOverview({
           </button>
         </div>
       </div>
+
+      {/* Role-Specific Executive Welcome Banner */}
+      {isSuperAdmin ? (
+        <div className="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md border border-purple-800/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 text-[10px] font-extrabold uppercase tracking-wider border border-purple-400/30">
+                Super Administrator
+              </span>
+              <span className="text-xs text-purple-200 font-medium">Welcome, {currentUser?.name || "Super Admin"}</span>
+            </div>
+            <h2 className="text-lg font-bold mt-1 text-white">Platform Governance & Security Center</h2>
+            <p className="text-xs text-purple-200/90 mt-0.5 max-w-2xl">
+              Oversee the administrative staff, audit system logs, and inspect platform verification and moderation pipelines.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => onNavigateTab("admin_management")}
+              className="px-3.5 py-2 rounded-xl bg-white text-purple-950 font-bold text-xs hover:bg-purple-50 transition shadow-sm cursor-pointer"
+            >
+              Manage Admin Team
+            </button>
+            <button
+              onClick={() => onNavigateTab("audit_logs")}
+              className="px-3.5 py-2 rounded-xl bg-purple-800/80 text-white font-bold text-xs hover:bg-purple-700 transition border border-purple-400/40 cursor-pointer"
+            >
+              Audit Logs
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-[#146356] via-[#10564a] to-[#0c473c] rounded-2xl p-5 text-white shadow-md border border-emerald-700/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 text-[10px] font-extrabold uppercase tracking-wider border border-white/20">
+                Operations Admin
+              </span>
+              <span className="text-xs text-emerald-100 font-medium">Welcome, {currentUser?.name || "Admin"}</span>
+            </div>
+            <h2 className="text-lg font-bold mt-1 text-white">Operations & Service Catalog Center</h2>
+            <p className="text-xs text-emerald-100/90 mt-0.5 max-w-2xl">
+              Verify provider credentials, resolve community reports, and manage categories and skills available on Nirbhor.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => onNavigateTab("verifications")}
+              className="px-3.5 py-2 rounded-xl bg-white text-[#146356] font-bold text-xs hover:bg-emerald-50 transition shadow-sm cursor-pointer"
+            >
+              Verifications
+            </button>
+            <button
+              onClick={() => onNavigateTab("categories")}
+              className="px-3.5 py-2 rounded-xl bg-white/20 text-white font-bold text-xs hover:bg-white/30 transition border border-white/20 cursor-pointer"
+            >
+              Categories
+            </button>
+            <button
+              onClick={() => onNavigateTab("skills")}
+              className="px-3.5 py-2 rounded-xl bg-white/20 text-white font-bold text-xs hover:bg-white/30 transition border border-white/20 cursor-pointer"
+            >
+              Skills
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* KPI 4-Card Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

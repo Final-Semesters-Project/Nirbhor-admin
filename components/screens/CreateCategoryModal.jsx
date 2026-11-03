@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { X, FolderPlus, AlertCircle, CheckCircle2, Layers } from "lucide-react";
 import { adminService } from "@/lib/adminService";
 
-export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated }) {
+export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated, isSuperAdmin }) {
   const [nameEn, setNameEn] = useState("");
   const [nameBn, setNameBn] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +40,16 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
       onClose();
     } catch (err) {
       setIsSubmitting(false);
-      setApiError(err.message || "Failed to create category. Please try again.");
+      let msg = err.message || "Failed to create category. Please try again.";
+      if (
+        msg.toLowerCase().includes("admins only") ||
+        msg.includes("403") ||
+        msg.toLowerCase().includes("forbidden")
+      ) {
+        msg =
+          "Permission Denied: Under backend security policy (categories_router.py), category creation is reserved for regular 'admin' accounts. Super Admin accounts have oversight access.";
+      }
+      setApiError(msg);
     }
   };
 
@@ -73,6 +82,12 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {isSuperAdmin && (
+            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs">
+              <span className="font-bold">Backend Policy:</span> Under current backend configuration (`categories_router.py`), category creation is permitted for regular <span className="font-semibold underline">Admin</span> accounts. Super Admin accounts oversee categories.
+            </div>
+          )}
+
           {apiError && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />

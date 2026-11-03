@@ -14,11 +14,13 @@ import {
   AlertCircle,
   Hash,
   Globe,
+  ShieldCheck,
+  Info,
 } from "lucide-react";
 import CreateCategoryModal from "./CreateCategoryModal";
 import { adminService } from "@/lib/adminService";
 
-export default function CategoryManagement({ onNavigateToSkills }) {
+export default function CategoryManagement({ onNavigateToSkills, currentUser, isSuperAdmin }) {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +66,21 @@ export default function CategoryManagement({ onNavigateToSkills }) {
         <div className="fixed top-20 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Role-Based Notice for Super Admin */}
+      {isSuperAdmin && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-purple-900 text-xs">
+          <div className="w-8 h-8 rounded-xl bg-purple-200/80 text-purple-800 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold">Super Admin Oversight:</span>
+            <span className="ml-1 text-purple-800">
+              Service categories are managed by operational Admins (`POST /api/v1/category/create`). As Super Admin, you have full real-time visibility over categories and their linked skills.
+            </span>
+          </div>
         </div>
       )}
 
@@ -188,6 +205,7 @@ export default function CategoryManagement({ onNavigateToSkills }) {
       {/* Add Category Modal */}
       <CreateCategoryModal
         isOpen={isCreateModalOpen}
+        isSuperAdmin={isSuperAdmin}
         onClose={() => setIsCreateModalOpen(false)}
         onCategoryCreated={(msg) => {
           showToast(msg);

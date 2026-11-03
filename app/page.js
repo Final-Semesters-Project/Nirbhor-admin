@@ -294,7 +294,7 @@ export default function App() {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Breadcrumb / Screen Title */}
+            {/* Breadcrumb / Screen Title & Role Badge */}
             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
               <span className="font-semibold text-gray-800">Nirbhor Admin</span>
               <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
@@ -310,6 +310,16 @@ export default function App() {
                   : activeTab === "skills"
                   ? "Skill Management"
                   : activeTab.replace("_", " ")}
+              </span>
+              <span
+                className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                  isSuperAdmin
+                    ? "bg-purple-100 text-purple-800 border border-purple-200"
+                    : "bg-emerald-100 text-[#16654e] border border-emerald-200"
+                }`}
+                title={`Operating under ${isSuperAdmin ? "Super Admin" : "Admin"} role permissions`}
+              >
+                {isSuperAdmin ? "Super Admin" : "Admin"}
               </span>
             </div>
           </div>
@@ -345,8 +355,16 @@ export default function App() {
               stats={stats}
               verifications={verifications}
               reports={reports}
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
               onReviewWorker={handleReviewWorker}
-              onNavigateTab={(tab) => setActiveTab(tab)}
+              onNavigateTab={(tab) => {
+                if (!isSuperAdmin && (tab === "admin_management" || tab === "audit_logs")) {
+                  showToast("Access Denied: Super Admin access required.");
+                  return;
+                }
+                setActiveTab(tab);
+              }}
               onRefresh={fetchDashboardData}
               isLoading={isRefreshing}
             />
@@ -356,6 +374,8 @@ export default function App() {
             <VerificationRequests
               verifications={verifications}
               stats={stats}
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
               onReviewDocuments={handleReviewWorker}
               onRefresh={fetchDashboardData}
             />
@@ -364,6 +384,8 @@ export default function App() {
           {activeTab === "review_document" && (
             <DocumentVerificationDetail
               worker={selectedWorker}
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
               onBack={() => setActiveTab("verifications")}
               onApprove={handleApproveWorker}
               onReject={handleRejectWorker}
@@ -372,6 +394,8 @@ export default function App() {
 
           {activeTab === "categories" && (
             <CategoryManagement
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
               onNavigateToSkills={(catId) => {
                 setSelectedCategoryFilter(catId);
                 setActiveTab("skills");
@@ -380,27 +404,53 @@ export default function App() {
           )}
 
           {activeTab === "skills" && (
-            <SkillManagement initialCategoryFilter={selectedCategoryFilter} />
+            <SkillManagement
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
+              initialCategoryFilter={selectedCategoryFilter}
+            />
           )}
 
           {activeTab === "reports" && (
             <ReportsAndFlags
               reports={reports}
               setReports={setReports}
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
               onRefresh={fetchDashboardData}
               isLoading={isRefreshing}
             />
           )}
 
-          {activeTab === "users" && <UserManagement />}
-
-          {activeTab === "analytics" && <AnalyticsScreen />}
-
-          {isSuperAdmin && activeTab === "admin_management" && (
-            <AdminManagement admins={admins} setAdmins={setAdmins} />
+          {activeTab === "users" && (
+            <UserManagement
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
+            />
           )}
 
-          {isSuperAdmin && activeTab === "audit_logs" && <AuditLogsScreen />}
+          {activeTab === "analytics" && (
+            <AnalyticsScreen
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
+            />
+          )}
+
+          {isSuperAdmin && activeTab === "admin_management" && (
+            <AdminManagement
+              admins={admins}
+              setAdmins={setAdmins}
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
+            />
+          )}
+
+          {isSuperAdmin && activeTab === "audit_logs" && (
+            <AuditLogsScreen
+              currentUser={currentUser}
+              isSuperAdmin={isSuperAdmin}
+            />
+          )}
         </main>
       </div>
     </div>

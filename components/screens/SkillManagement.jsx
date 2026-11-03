@@ -13,11 +13,12 @@ import {
   Hash,
   Globe,
   Layers,
+  ShieldCheck,
 } from "lucide-react";
 import CreateSkillModal from "./CreateSkillModal";
 import { adminService } from "@/lib/adminService";
 
-export default function SkillManagement({ initialCategoryFilter = "all" }) {
+export default function SkillManagement({ initialCategoryFilter = "all", currentUser, isSuperAdmin }) {
   const [categories, setCategories] = useState([]);
   const [skills, setSkills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +97,21 @@ export default function SkillManagement({ initialCategoryFilter = "all" }) {
         <div className="fixed top-20 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-2xl border border-slate-700 animate-in fade-in slide-in-from-top-4">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Role-Based Notice for Super Admin */}
+      {isSuperAdmin && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-purple-900 text-xs">
+          <div className="w-8 h-8 rounded-xl bg-purple-200/80 text-purple-800 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold">Super Admin Oversight:</span>
+            <span className="ml-1 text-purple-800">
+              Skills are registered and linked to categories by operational Admins (`POST /api/v1/skill/create`). Super Admins oversee skills and category mappings across the platform.
+            </span>
+          </div>
         </div>
       )}
 
@@ -245,6 +261,7 @@ export default function SkillManagement({ initialCategoryFilter = "all" }) {
       {/* Add Skill Modal */}
       <CreateSkillModal
         isOpen={isCreateModalOpen}
+        isSuperAdmin={isSuperAdmin}
         onClose={() => setIsCreateModalOpen(false)}
         categories={categories}
         initialCategoryId={selectedCategory !== "all" ? selectedCategory : null}
